@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <title>Atlassian AI Assistant</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>🤖 AI Assistant</h2>
+            </div>
+
+            <div class="sidebar-content">
+                <div class="config-status" id="configStatus">
+                    <div class="status-indicator" id="statusIndicator"></div>
+                    <span id="statusText">Checking configuration...</span>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="action-btn" onclick="quickAction('sprint')">
+                        📋 My Sprint Tasks
+                    </button>
+                    <button class="action-btn" onclick="quickAction('today')">
+                        📅 Today's Work
+                    </button>
+                    <button class="action-btn" onclick="quickAction('search')">
+                        🔍 Search Confluence
+                    </button>
+                    <button class="action-btn" onclick="quickAction('recent')">
+                        📄 Recent Pages
+                    </button>
+                </div>
+
+                <div class="settings-section">
+                    <button class="settings-btn" onclick="openSettings()">
+                        ⚙️ Settings
+                    </button>
+                    <button class="settings-btn" onclick="clearChat()">
+                        🗑️ Clear Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <h1>Chat with Your Atlassian Assistant</h1>
+                <p>Ask me about your Jira tasks or Confluence documentation</p>
+            </div>
+
+            <div class="chat-container" id="chatContainer">
+                <div class="welcome-message">
+                    <h2>👋 Welcome!</h2>
+                    <p>I can help you with:</p>
+                    <ul>
+                        <li>📋 Viewing and analyzing your Jira tasks</li>
+                        <li>🔍 Searching Confluence pages</li>
+                        <li>📖 Reading and summarizing documentation</li>
+                        <li>💡 Answering questions about your work</li>
+                    </ul>
+                    <p class="hint">Try asking: "What are my sprint tasks?" or "Search for API documentation"</p>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea
+                        id="messageInput"
+                        placeholder="Ask me anything about Jira or Confluence..."
+                        rows="1"
+                    ></textarea>
+                    <button id="sendButton" onclick="sendMessage()">
+                        <span class="send-icon">➤</span>
+                    </button>
+                </div>
+                <div class="input-hint">
+                    Press Enter to send, Shift+Enter for new line
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Anthropic API Key</label>
+                    <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+                </div>
+                <div class="form-group">
+                    <label>Jira URL</label>
+                    <input type="text" id="jiraUrl" placeholder="https://jira.yourcompany.com">
+                </div>
+                <div class="form-group">
+                    <label>Jira Username</label>
+                    <input type="text" id="jiraUsername" placeholder="your.email@company.com">
+                </div>
+                <div class="form-group">
+                    <label>Jira API Token</label>
+                    <input type="password" id="jiraToken">
+                </div>
+                <div class="form-group">
+                    <label>Confluence URL</label>
+                    <input type="text" id="confluenceUrl" placeholder="https://confluence.yourcompany.com">
+                </div>
+                <div class="form-group">
+                    <label>Confluence Username</label>
+                    <input type="text" id="confluenceUsername" placeholder="your.email@company.com">
+                </div>
+                <div class="form-group">
+                    <label>Confluence API Token</label>
+                    <input type="password" id="confluenceToken">
+                </div>
+                <div class="form-group">
+                    <label>Confluence Space Key (optional)</label>
+                    <input type="text" id="confluenceSpace" placeholder="TEAM">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

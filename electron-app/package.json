@@ -1,0 +1,69 @@
+{
+  "name": "atlassian-ai-assistant",
+  "version": "1.0.0",
+  "description": "AI-powered chatbot assistant for Jira and Confluence",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux"
+  },
+  "keywords": [
+    "atlassian",
+    "jira",
+    "confluence",
+    "ai",
+    "chatbot",
+    "assistant"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "marked": "^11.0.0"
+  },
+  "build": {
+    "appId": "com.atlassian.ai.assistant",
+    "productName": "Atlassian AI Assistant",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "icon": "assets/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    }
+  }
+}
