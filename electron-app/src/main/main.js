@@ -311,13 +311,19 @@ ipcMain.on('test-connection', async (event, settings) => {
 
         testProcess.stdout.on('data', (data) => {
             stdout += data.toString();
+            console.log('Test stdout:', data.toString());
         });
 
         testProcess.stderr.on('data', (data) => {
             stderr += data.toString();
+            console.error('Test stderr:', data.toString());
         });
 
         testProcess.on('close', (code) => {
+            console.log('Test process exited with code:', code);
+            console.log('Full stdout:', stdout);
+            console.log('Full stderr:', stderr);
+
             if (code === 0) {
                 event.reply('connection-test-result', {
                     success: true
