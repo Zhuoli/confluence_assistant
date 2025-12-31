@@ -1,15 +1,27 @@
 /**
  * Agent Client for Electron App
  *
- * This client communicates with the Python Agent SDK (via CLI)
- * which uses MCP server and Skills for Jira/Confluence access.
- *
- * This replaces the previous chatbot.js, jira-client.js, and confluence-client.js
- * with a simpler architecture that delegates to the Python agent.
+ * This client uses the TypeScript Agent SDK which provides
+ * MCP server and Skills for Jira/Confluence access.
  */
 
-const { spawn } = require('child_process');
 const path = require('path');
+
+// Import the TypeScript agent SDK
+// Note: We require the compiled JavaScript from dist/
+let AtlassianAgentSDK;
+let loadConfig;
+
+try {
+    // Load the TypeScript compiled code
+    const agentModule = require(path.join(__dirname, '..', '..', '..', 'dist', 'cli', 'index.js'));
+
+    // For ES modules, we need to handle the import differently
+    // Since our TypeScript compiles to ESM, we'll use a dynamic import approach
+    console.log('Loading TypeScript agent...');
+} catch (error) {
+    console.error('Error loading TypeScript agent:', error);
+}
 
 class AgentClient {
     constructor(config) {
@@ -24,28 +36,65 @@ class AgentClient {
 
         this.config = config;
         this.conversationHistory = [];
-
-        // Path to Python agent
-        this.projectRoot = path.join(__dirname, '..', '..', '..');
-        this.pythonPath = path.join(this.projectRoot, 'venv', 'bin', 'python');
-        this.agentPath = path.join(this.projectRoot, 'src');
+        this.agent = null;
+        this.initialized = false;
 
         console.log('AgentClient initialized');
         console.log('  - Provider:', provider);
-        console.log('  - Project root:', this.projectRoot);
-        console.log('  - Python path:', this.pythonPath);
     }
 
     /**
-     * Send a message to the Python Agent SDK
+     * Initialize the TypeScript agent
+     */
+    async initialize() {
+        if (this.initialized) {
+            return;
+        }
+
+        try {
+            // Dynamic import of ES modules from Node.js CommonJS
+            const agentPath = path.join(__dirname, '..', '..', '..', 'src', 'agent', 'agent-sdk.js');
+            const configPath = path.join(__dirname, '..', '..', '..', 'src', 'config', 'index.js');
+
+            // Use dynamic import() for ESM modules
+            const { AtlassianAgentSDK } = await import('file://' + path.join(__dirname, '..', '..', '..', 'dist', 'cli', 'index.js').replace(/\\/g, '/'));
+
+            // Create config object in the format expected by TypeScript agent
+            const agentConfig = {
+                modelProvider: this.config.MODEL_PROVIDER || 'claude',
+                modelName: this.config.MODEL_NAME || undefined,
+                anthropicApiKey: this.config.ANTHROPIC_API_KEY || '',
+                openaiApiKey: this.config.OPENAI_API_KEY || '',
+                jiraUrl: this.config.JIRA_URL,
+                jiraUsername: this.config.JIRA_USERNAME,
+                jiraApiToken: this.config.JIRA_API_TOKEN,
+                confluenceUrl: this.config.CONFLUENCE_URL,
+                confluenceUsername: this.config.CONFLUENCE_USERNAME,
+                confluenceApiToken: this.config.CONFLUENCE_API_TOKEN,
+                confluenceSpaceKey: this.config.CONFLUENCE_SPACE_KEY || '',
+                userDisplayName: this.config.USER_DISPLAY_NAME || '',
+                userEmail: this.config.USER_EMAIL || '',
+            };
+
+            // For now, use a simpler approach: spawn Node.js with the CLI
+            // This avoids ESM/CommonJS compatibility issues
+            console.log('Agent will be initialized on first message');
+            this.initialized = true;
+        } catch (error) {
+            console.error('Error initializing agent:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Send a message to the TypeScript Agent SDK
      *
      * @param {string} message - User's message
      * @returns {Promise<string>} - Agent's response
      */
     async sendMessage(message) {
         try {
-            // Use Python agent with SDK mode
-            const response = await this.callPythonAgent(message);
+            const response = await this.callNodeAgent(message);
 
             // Track conversation history
             this.conversationHistory.push({
@@ -70,44 +119,45 @@ class AgentClient {
     }
 
     /**
-     * Call Python agent via subprocess
+     * Call Node.js TypeScript agent via CLI
      *
      * @param {string} message - User's message
      * @returns {Promise<string>} - Agent's response
      */
-    async callPythonAgent(message) {
+    async callNodeAgent(message) {
+        const { spawn } = require('child_process');
+        const path = require('path');
+
         return new Promise((resolve, reject) => {
-            // Command: python -m src.main chat --message "user message"
+            const projectRoot = path.join(__dirname, '..', '..');
+            const cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
+
+            // Command: node dist/cli/index.js chat --message "user message"
             const args = [
-                '-m',
-                'src.main',
+                cliPath,
                 'chat',
                 '--message',
                 message
             ];
 
-            console.log('Calling Python agent:', this.pythonPath, args.join(' '));
+            console.log('Calling TypeScript agent:', 'node', args.join(' '));
 
-            const process = spawn(this.pythonPath, args, {
-                cwd: this.projectRoot,
+            const process = spawn('node', args, {
+                cwd: projectRoot,
                 env: {
                     ...process.env,
                     // Pass through configuration from Electron's .env
-                    // Model provider settings
                     MODEL_PROVIDER: this.config.MODEL_PROVIDER || 'claude',
                     MODEL_NAME: this.config.MODEL_NAME || '',
                     ANTHROPIC_API_KEY: this.config.ANTHROPIC_API_KEY || '',
                     OPENAI_API_KEY: this.config.OPENAI_API_KEY || '',
-                    // Jira settings
                     JIRA_URL: this.config.JIRA_URL,
                     JIRA_USERNAME: this.config.JIRA_USERNAME,
                     JIRA_API_TOKEN: this.config.JIRA_API_TOKEN,
-                    // Confluence settings
                     CONFLUENCE_URL: this.config.CONFLUENCE_URL,
                     CONFLUENCE_USERNAME: this.config.CONFLUENCE_USERNAME,
                     CONFLUENCE_API_TOKEN: this.config.CONFLUENCE_API_TOKEN,
                     CONFLUENCE_SPACE_KEY: this.config.CONFLUENCE_SPACE_KEY,
-                    // User settings
                     USER_EMAIL: this.config.USER_EMAIL,
                     USER_DISPLAY_NAME: this.config.USER_DISPLAY_NAME
                 }
@@ -126,17 +176,24 @@ class AgentClient {
 
             process.on('close', (code) => {
                 if (code !== 0) {
-                    console.error('Python agent error:', stderr);
+                    console.error('TypeScript agent error:', stderr);
                     reject(new Error(`Agent exited with code ${code}: ${stderr}`));
                 } else {
-                    // Clean up the output (remove extra whitespace/newlines)
-                    const cleanedOutput = stdout.trim();
+                    // Extract just the assistant response (remove "User:" and "Assistant:" labels)
+                    let cleanedOutput = stdout.trim();
+
+                    // Remove CLI formatting if present
+                    const assistantMatch = cleanedOutput.match(/Assistant:\s*(.+)/s);
+                    if (assistantMatch) {
+                        cleanedOutput = assistantMatch[1].trim();
+                    }
+
                     resolve(cleanedOutput);
                 }
             });
 
             process.on('error', (error) => {
-                console.error('Failed to start Python agent:', error);
+                console.error('Failed to start TypeScript agent:', error);
                 reject(error);
             });
         });

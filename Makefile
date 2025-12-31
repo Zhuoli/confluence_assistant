@@ -1,5 +1,5 @@
 # Atlassian AI Assistant - Makefile
-# Self-explanatory commands for both Python CLI and Electron Desktop App
+# All commands for building, packaging, and running the Electron desktop app
 
 .PHONY: help
 .DEFAULT_GOAL := help
@@ -14,54 +14,43 @@ NC := \033[0m # No Color
 ##@ General
 
 help: ## Show this help message
-	@echo "$(BLUE)Atlassian AI Assistant - Available Commands$(NC)"
+	@echo "$(BLUE)Atlassian AI Assistant v3.0.0$(NC)"
 	@echo ""
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage:\n  make $(GREEN)<target>$(NC)\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  $(GREEN)%-25s$(NC) %s\n", $$1, $$2 } /^##@/ { printf "\n$(BLUE)%s$(NC)\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 check-deps: ## Check if required dependencies are installed
 	@echo "$(BLUE)Checking dependencies...$(NC)"
-	@command -v python3 >/dev/null 2>&1 || { echo "$(RED)Python 3 is required but not installed$(NC)"; exit 1; }
-	@command -v uv >/dev/null 2>&1 || { echo "$(RED)uv is required but not installed. Install it: curl -LsSf https://astral.sh/uv/install.sh | sh$(NC)"; exit 1; }
 	@command -v node >/dev/null 2>&1 || { echo "$(RED)Node.js is required but not installed$(NC)"; exit 1; }
 	@command -v npm >/dev/null 2>&1 || { echo "$(RED)npm is required but not installed$(NC)"; exit 1; }
 	@echo "$(GREEN)✓ All dependencies are installed$(NC)"
-	@echo "  Python: $$(python3 --version)"
-	@echo "  uv: $$(uv --version)"
 	@echo "  Node.js: $$(node --version)"
 	@echo "  npm: $$(npm --version)"
 
 ##@ Setup & Installation
 
-setup: setup-python setup-electron setup-mcp ## Setup everything (Python CLI, Electron app, MCP server)
+setup: check-deps setup-root setup-electron ## Setup everything (root + Electron app)
 	@echo "$(GREEN)✓ Complete setup finished!$(NC)"
 	@echo ""
 	@echo "Next steps:"
 	@echo "  1. Configure: make config"
-	@echo "  2. Run CLI:   make cli-jira"
-	@echo "  3. Run Chat:  make chat"
-	@echo "  4. Run App:   make app"
+	@echo "  2. Build:     make build"
+	@echo "  3. Run:       make app"
+	@echo "  4. Package:   make package"
 
-setup-python: check-deps ## Setup Python CLI environment
-	@echo "$(BLUE)Setting up Python environment with uv...$(NC)"
-	@uv venv
-	@uv sync
-	@echo "$(GREEN)✓ Python environment ready$(NC)"
+setup-root: check-deps ## Install root TypeScript dependencies
+	@echo "$(BLUE)Installing root dependencies...$(NC)"
+	@npm install
+	@echo "$(GREEN)✓ Root dependencies installed$(NC)"
 
-setup-electron: check-deps ## Setup Electron desktop app
-	@echo "$(BLUE)Setting up Electron app...$(NC)"
+setup-electron: check-deps ## Install Electron app dependencies
+	@echo "$(BLUE)Installing Electron dependencies...$(NC)"
 	@cd electron-app && npm install
-	@echo "$(GREEN)✓ Electron app ready$(NC)"
-
-setup-mcp: check-deps ## Setup MCP server
-	@echo "$(BLUE)Setting up MCP server...$(NC)"
-	@uv venv
-	@uv sync
-	@echo "$(GREEN)✓ MCP server ready (dependencies managed via pyproject.toml)$(NC)"
+	@echo "$(GREEN)✓ Electron dependencies installed$(NC)"
 
 config: ## Configure credentials (creates .env files)
 	@if [ ! -f .env ]; then \
 		cp .env.example .env; \
-		echo "$(YELLOW)Created .env for Python CLI$(NC)"; \
+		echo "$(YELLOW)Created .env for root$(NC)"; \
 		echo "$(YELLOW)Please edit .env with your credentials$(NC)"; \
 	else \
 		echo "$(GREEN).env already exists$(NC)"; \
@@ -73,165 +62,193 @@ config: ## Configure credentials (creates .env files)
 	else \
 		echo "$(GREEN)electron-app/.env already exists$(NC)"; \
 	fi
-	@if [ ! -f mcp-server/.env ]; then \
-		cp mcp-server/.env.example mcp-server/.env; \
-		echo "$(YELLOW)Created .env for MCP server$(NC)"; \
-		echo "$(YELLOW)Please edit mcp-server/.env with your credentials$(NC)"; \
-	else \
-		echo "$(GREEN)mcp-server/.env already exists$(NC)"; \
-	fi
 
-##@ Python CLI Commands
+##@ Build Commands
 
-cli-jira: ## Get your Jira sprint tasks (Python CLI)
-	@echo "$(BLUE)Fetching Jira sprint tasks...$(NC)"
-	@uv run python -m src.main jira
+build: ## Build TypeScript to JavaScript
+	@echo "$(BLUE)Building TypeScript...$(NC)"
+	@npm run build
+	@echo "$(GREEN)✓ TypeScript compiled successfully$(NC)"
+	@echo "  CLI:        dist/cli/index.js"
+	@echo "  MCP Server: dist/mcp/server.js"
 
-cli-jira-all: ## Get all your Jira issues (Python CLI)
-	@echo "$(BLUE)Fetching all Jira issues...$(NC)"
-	@uv run python -m src.main jira --all-issues
+build-dev: ## Build in development mode (watch)
+	@echo "$(BLUE)Building TypeScript in watch mode...$(NC)"
+	@npm run dev
 
-cli-confluence-search: ## Search Confluence (usage: make cli-confluence-search QUERY="your search")
-	@echo "$(BLUE)Searching Confluence...$(NC)"
-	@uv run python -m src.main confluence search "$(QUERY)"
+typecheck: ## Type check without building
+	@echo "$(BLUE)Type checking...$(NC)"
+	@npm run typecheck
 
-cli-confluence-recent: ## Get recent Confluence pages (Python CLI)
-	@echo "$(BLUE)Fetching recent Confluence pages...$(NC)"
-	@uv run python -m src.main confluence recent
+lint: ## Lint TypeScript code
+	@echo "$(BLUE)Linting code...$(NC)"
+	@npm run lint
 
-cli-help: ## Show Python CLI help
-	@uv run python -m src.main --help
+lint-fix: ## Lint and fix TypeScript code
+	@echo "$(BLUE)Linting and fixing code...$(NC)"
+	@npm run lint:fix
 
-##@ Agent SDK & MCP Commands
+format: ## Format code with Prettier
+	@echo "$(BLUE)Formatting code...$(NC)"
+	@npm run format
 
-chat: ## Start interactive chat session with Agent SDK (MCP + Skills)
-	@echo "$(BLUE)Starting interactive chat session...$(NC)"
-	@uv run python -m src.main chat
+##@ Run Commands
 
-chat-message: ## Send a single message to Agent SDK (usage: make chat-message MSG="your message")
-	@echo "$(BLUE)Sending message to agent...$(NC)"
-	@uv run python -m src.main chat --message "$(MSG)"
-
-run-mcp-server: ## Run MCP server standalone (for testing)
-	@echo "$(BLUE)Starting MCP server...$(NC)"
-	@cd mcp-server && uv run python server.py
-
-test-mcp-tools: ## Test MCP tools (requires MCP server running)
-	@echo "$(BLUE)Testing MCP tools...$(NC)"
-	@echo "Note: This requires the MCP server to be running"
-	@uv run python -m mcp_server.tests.test_tools
-
-list-skills: ## List available Claude Skills
-	@echo "$(BLUE)Available Claude Skills:$(NC)"
-	@ls -1 .claude/skills/
-	@echo ""
-	@echo "To view a skill:"
-	@echo "  cat .claude/skills/jira-workflow/SKILL.md"
-	@echo "  cat .claude/skills/confluence-workflow/SKILL.md"
-	@echo "  cat .claude/skills/trading-context/SKILL.md"
-
-##@ Electron Desktop App Commands
-
-app: ## Launch the Electron desktop app
+app: build ## Launch the Electron desktop app
 	@echo "$(BLUE)Launching Atlassian AI Assistant...$(NC)"
 	@cd electron-app && npm start
 
-app-dev: ## Launch the Electron app with DevTools
+app-dev: build ## Launch the Electron app with DevTools
 	@echo "$(BLUE)Launching in development mode...$(NC)"
 	@cd electron-app && npm run dev
 
-##@ Building & Distribution
+chat: build ## Start interactive chat session (CLI)
+	@echo "$(BLUE)Starting interactive chat...$(NC)"
+	@node dist/cli/index.js chat
 
-build-all: build-app-mac build-app-win build-app-linux ## Build desktop app for all platforms
-	@echo "$(GREEN)✓ All builds complete!$(NC)"
-	@echo "Built files are in electron-app/dist/"
+chat-message: build ## Send a single message (usage: make chat-message MSG="your message")
+	@echo "$(BLUE)Sending message to agent...$(NC)"
+	@node dist/cli/index.js chat --message "$(MSG)"
 
-build-app: build-app-mac ## Build desktop app for current platform (default: macOS)
+jira: build ## Get your Jira sprint tasks (CLI)
+	@echo "$(BLUE)Fetching Jira sprint tasks...$(NC)"
+	@node dist/cli/index.js jira
 
-build-app-mac: ## Build macOS desktop app (.dmg)
-	@echo "$(BLUE)Building macOS app...$(NC)"
+jira-all: build ## Get all your Jira issues (CLI)
+	@echo "$(BLUE)Fetching all Jira issues...$(NC)"
+	@node dist/cli/index.js jira --all-issues
+
+confluence-search: build ## Search Confluence (usage: make confluence-search QUERY="your search")
+	@echo "$(BLUE)Searching Confluence...$(NC)"
+	@node dist/cli/index.js confluence "$(QUERY)"
+
+##@ Package Commands (Build Installers)
+
+package: build ## Build installer for current platform
+	@echo "$(BLUE)Building installer for current platform...$(NC)"
+	@cd electron-app && npm run build
+	@echo "$(GREEN)✓ Build complete!$(NC)"
+	@echo "$(GREEN)Installers are in: electron-app/dist/$(NC)"
+
+package-mac: build ## Build macOS installer (.dmg)
+	@echo "$(BLUE)Building macOS installer...$(NC)"
 	@cd electron-app && npm run build:mac
 	@echo "$(GREEN)✓ macOS build complete: electron-app/dist/*.dmg$(NC)"
 
-build-app-win: ## Build Windows desktop app (.exe)
-	@echo "$(BLUE)Building Windows app...$(NC)"
+package-win: build ## Build Windows installer (.exe)
+	@echo "$(BLUE)Building Windows installer...$(NC)"
 	@cd electron-app && npm run build:win
 	@echo "$(GREEN)✓ Windows build complete: electron-app/dist/*.exe$(NC)"
 
-build-app-linux: ## Build Linux desktop app (.AppImage, .deb)
-	@echo "$(BLUE)Building Linux app...$(NC)"
+package-linux: build ## Build Linux installers (.AppImage, .deb)
+	@echo "$(BLUE)Building Linux installers...$(NC)"
 	@cd electron-app && npm run build:linux
-	@echo "$(GREEN)✓ Linux build complete: electron-app/dist/$(NC)"
+	@echo "$(GREEN)✓ Linux builds complete: electron-app/dist/$(NC)"
+
+package-all: build ## Build installers for all platforms
+	@echo "$(BLUE)Building installers for all platforms...$(NC)"
+	@cd electron-app && npm run build:mac && npm run build:win && npm run build:linux
+	@echo "$(GREEN)✓ All builds complete!$(NC)"
+	@echo "Built files are in electron-app/dist/"
 
 ##@ Testing & Validation
 
+test: ## Run tests
+	@echo "$(BLUE)Running tests...$(NC)"
+	@npm test
+
+test-watch: ## Run tests in watch mode
+	@echo "$(BLUE)Running tests in watch mode...$(NC)"
+	@npm run test:watch
+
+test-coverage: ## Run tests with coverage
+	@echo "$(BLUE)Running tests with coverage...$(NC)"
+	@npm run test:coverage
+
 test-config: ## Test configuration validity
 	@echo "$(BLUE)Testing configuration...$(NC)"
-	@uv run python -c "from src.config import get_config; config = get_config(); print('$(GREEN)✓ Configuration valid$(NC)')" || echo "$(RED)✗ Configuration invalid$(NC)"
-
-test-jira: ## Test Jira connection
-	@echo "$(BLUE)Testing Jira connection...$(NC)"
-	@uv run python -m src.main jira --no-analyze --max-results 1
-
-test-confluence: ## Test Confluence connection
-	@echo "$(BLUE)Testing Confluence connection...$(NC)"
-	@uv run python -m src.main confluence recent --space $(SPACE)
+	@node -e "require('./dist/cli/index.js')" && echo "$(GREEN)✓ Configuration valid$(NC)" || echo "$(RED)✗ Configuration invalid$(NC)"
 
 ##@ Maintenance
 
 clean: ## Clean build artifacts and cache
 	@echo "$(BLUE)Cleaning build artifacts...$(NC)"
-	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@rm -rf electron-app/dist electron-app/build electron-app/out
+	@rm -rf dist
+	@rm -rf electron-app/dist
+	@rm -rf electron-app/backend-dist
+	@rm -rf electron-app/.claude-skills
 	@rm -rf electron-app/node_modules/.cache
 	@echo "$(GREEN)✓ Cleaned$(NC)"
 
 clean-all: clean ## Clean everything including dependencies
 	@echo "$(BLUE)Cleaning all dependencies...$(NC)"
-	@rm -rf .venv
-	@rm -rf venv
+	@rm -rf node_modules
 	@rm -rf electron-app/node_modules
-	@rm -f uv.lock
 	@echo "$(GREEN)✓ All cleaned - run 'make setup' to reinstall$(NC)"
 
 reset-config: ## Reset configuration files
 	@echo "$(YELLOW)Resetting configuration...$(NC)"
-	@rm -f .env electron-app/.env mcp-server/.env
+	@rm -f .env electron-app/.env
 	@echo "$(GREEN)✓ Configuration reset - run 'make config' to recreate$(NC)"
 
-##@ Development
+##@ Information
 
-dev-python: ## Run Python CLI in development mode
-	@echo "$(BLUE)Python CLI ready$(NC)"
-	@echo "Usage examples:"
-	@echo "  make cli-jira"
-	@echo "  make cli-confluence-search QUERY='api docs'"
-	@uv run bash
+version: ## Show version information
+	@echo "$(BLUE)Atlassian AI Assistant v3.0.0$(NC)"
+	@echo ""
+	@echo "Runtime:           Node.js"
+	@echo "CLI:               ./dist/cli/index.js"
+	@echo "MCP Server:        ./dist/mcp/server.js"
+	@echo "Electron App:      ./electron-app/"
+	@echo ""
+	@echo "Dependencies:"
+	@node --version 2>/dev/null || echo "  Node.js: Not installed"
+	@npm --version 2>/dev/null || echo "  npm: Not installed"
 
-dev-electron: app-dev ## Alias for app-dev
+status: ## Show project status
+	@echo "$(BLUE)Project Status:$(NC)"
+	@echo ""
+	@echo "TypeScript Build:"
+	@test -d dist && echo "  $(GREEN)✓ dist/ exists (compiled)$(NC)" || echo "  $(RED)✗ dist/ not found (run 'make build')$(NC)"
+	@test -f dist/cli/index.js && echo "  $(GREEN)✓ CLI compiled$(NC)" || echo "  $(RED)✗ CLI not compiled$(NC)"
+	@test -f dist/mcp/server.js && echo "  $(GREEN)✓ MCP server compiled$(NC)" || echo "  $(RED)✗ MCP server not compiled$(NC)"
+	@echo ""
+	@echo "Configuration:"
+	@test -f .env && echo "  $(GREEN)✓ .env configured$(NC)" || echo "  $(YELLOW)○ .env not configured (run 'make config')$(NC)"
+	@test -f electron-app/.env && echo "  $(GREEN)✓ electron-app/.env configured$(NC)" || echo "  $(YELLOW)○ electron-app/.env not configured$(NC)"
+	@echo ""
+	@echo "Dependencies:"
+	@test -d node_modules && echo "  $(GREEN)✓ Root dependencies installed$(NC)" || echo "  $(RED)✗ Root dependencies not installed$(NC)"
+	@test -d electron-app/node_modules && echo "  $(GREEN)✓ Electron dependencies installed$(NC)" || echo "  $(RED)✗ Electron dependencies not installed$(NC)"
+	@echo ""
+	@echo "Skills:"
+	@test -d .claude/skills && echo "  $(GREEN)✓ Skills directory exists$(NC)" || echo "  $(RED)✗ Skills not found$(NC)"
+	@echo ""
+	@echo "Installers:"
+	@test -d electron-app/dist && echo "  $(GREEN)✓ Builds exist in electron-app/dist/$(NC)" || echo "  $(YELLOW)○ No builds yet (run 'make package')$(NC)"
 
-install-git-hooks: ## Install git hooks for development
-	@echo "$(BLUE)Installing git hooks...$(NC)"
-	@cp -n .git-hooks/pre-commit .git/hooks/pre-commit 2>/dev/null || true
-	@chmod +x .git/hooks/pre-commit 2>/dev/null || true
-	@echo "$(GREEN)✓ Git hooks installed$(NC)"
+list-skills: ## List available Claude Skills
+	@echo "$(BLUE)Available Claude Skills:$(NC)"
+	@ls -1 .claude/skills/ | grep -v "\.md$$" || echo "  No skills found"
+
+tree: ## Show project structure
+	@echo "$(BLUE)Project Structure:$(NC)"
+	@tree -L 3 -I 'node_modules|__pycache__|*.pyc|.git' --dirsfirst || \
+		find . -type d \( -name node_modules -o -name __pycache__ -o -name .git \) -prune -o -print | head -50
 
 ##@ Documentation
 
-docs: ## Open documentation
+docs: ## Show documentation files
 	@echo "$(BLUE)Documentation files:$(NC)"
-	@echo "  README.md                - Main documentation"
-	@echo "  GETTING_STARTED.md       - Quick start guide"
-	@echo "  CONFIGURATION_GUIDE.md   - Configuration details"
-	@echo "  TROUBLESHOOTING.md       - Common issues"
-	@echo "  electron-app/README.md   - Desktop app docs"
-	@echo "  DESKTOP_APP_SUMMARY.md   - Desktop app summary"
+	@echo "  README.md                  - Main documentation"
+	@echo "  MAKEFILE_GUIDE.md          - Makefile documentation"
+	@echo "  CONFIGURATION_GUIDE.md     - Configuration details"
+	@echo "  TROUBLESHOOTING.md         - Common issues"
 
 show-config: ## Show current configuration (without sensitive data)
 	@echo "$(BLUE)Current Configuration:$(NC)"
 	@if [ -f .env ]; then \
-		echo "\nPython CLI (.env):"; \
+		echo "\nRoot (.env):"; \
 		grep -v "TOKEN\|KEY\|PASSWORD" .env | grep "=" || echo "  (no non-sensitive vars)"; \
 	else \
 		echo "\n$(YELLOW)No .env file found$(NC)"; \
@@ -245,64 +262,24 @@ show-config: ## Show current configuration (without sensitive data)
 
 ##@ Quick Start Examples
 
-quick-start: setup config ## Complete quick start setup
+quick-start: setup config build ## Complete quick start setup and build
 	@echo ""
 	@echo "$(GREEN)✓ Setup complete!$(NC)"
 	@echo ""
 	@echo "$(BLUE)Try these commands:$(NC)"
-	@echo "  $(GREEN)make chat$(NC)                                  - Interactive chat with AI agent"
-	@echo "  $(GREEN)make cli-jira$(NC)                              - Get your Jira tasks"
 	@echo "  $(GREEN)make app$(NC)                                   - Launch desktop app"
-	@echo "  $(GREEN)make cli-confluence-search QUERY='docs'$(NC)    - Search Confluence"
-	@echo ""
-	@echo "$(BLUE)New MCP + Skills Architecture:$(NC)"
-	@echo "  $(GREEN)make list-skills$(NC)                           - View available skills"
-	@echo "  $(GREEN)make run-mcp-server$(NC)                        - Run MCP server standalone"
+	@echo "  $(GREEN)make chat$(NC)                                  - Interactive chat (CLI)"
+	@echo "  $(GREEN)make jira$(NC)                                  - Get your Jira tasks"
+	@echo "  $(GREEN)make package-mac$(NC)                           - Build macOS installer"
+	@echo "  $(GREEN)make package-win$(NC)                           - Build Windows installer"
+	@echo "  $(GREEN)make package-linux$(NC)                         - Build Linux installer"
 	@echo ""
 
-demo-python: ## Demo Python CLI features
-	@echo "$(BLUE)Python CLI Demo$(NC)"
-	@echo "\n1. Getting Jira sprint tasks..."
-	@uv run python -m src.main jira --no-analyze || true
-	@echo "\n2. Getting recent Confluence pages..."
-	@uv run python -m src.main confluence recent || true
-
-##@ Information
-
-version: ## Show version information
-	@echo "$(BLUE)Atlassian AI Assistant$(NC)"
-	@echo "Version: 2.0.0"
-	@echo ""
-	@echo "Python CLI:        ./src/"
-	@echo "Electron App:      ./electron-app/"
-	@echo ""
-	@echo "Dependencies:"
-	@python3 --version 2>/dev/null || echo "  Python: Not installed"
-	@uv --version 2>/dev/null || echo "  uv: Not installed"
-	@node --version 2>/dev/null || echo "  Node.js: Not installed"
-	@npm --version 2>/dev/null || echo "  npm: Not installed"
-
-status: ## Show project status
-	@echo "$(BLUE)Project Status:$(NC)"
-	@echo ""
-	@echo "Python Environment:"
-	@test -d .venv && echo "  $(GREEN)✓ Virtual environment exists (.venv)$(NC)" || test -d venv && echo "  $(YELLOW)○ Old venv exists (run 'make clean-all && make setup')$(NC)" || echo "  $(RED)✗ No virtual environment$(NC)"
-	@test -f uv.lock && echo "  $(GREEN)✓ uv.lock exists$(NC)" || echo "  $(YELLOW)○ uv.lock not found (run 'make setup')$(NC)"
-	@test -f .env && echo "  $(GREEN)✓ .env configured$(NC)" || echo "  $(YELLOW)○ .env not configured$(NC)"
-	@echo ""
-	@echo "MCP Server:"
-	@test -f mcp-server/server.py && echo "  $(GREEN)✓ MCP server exists$(NC)" || echo "  $(RED)✗ MCP server not found$(NC)"
-	@test -f mcp-server/.env && echo "  $(GREEN)✓ MCP .env configured$(NC)" || echo "  $(YELLOW)○ MCP .env not configured$(NC)"
-	@test -d .claude/skills && echo "  $(GREEN)✓ Skills directory exists$(NC)" || echo "  $(RED)✗ Skills not found$(NC)"
-	@echo ""
-	@echo "Electron App:"
-	@test -d electron-app/node_modules && echo "  $(GREEN)✓ Dependencies installed$(NC)" || echo "  $(RED)✗ Dependencies not installed$(NC)"
-	@test -f electron-app/.env && echo "  $(GREEN)✓ .env configured$(NC)" || echo "  $(YELLOW)○ .env not configured$(NC)"
-	@echo ""
-	@echo "Build Artifacts:"
-	@test -d electron-app/dist && echo "  $(GREEN)✓ Builds exist in electron-app/dist/$(NC)" || echo "  $(YELLOW)○ No builds yet$(NC)"
-
-tree: ## Show project structure
-	@echo "$(BLUE)Project Structure:$(NC)"
-	@tree -L 3 -I 'node_modules|venv|__pycache__|*.pyc|dist|build|.git' --dirsfirst || \
-		find . -type d \( -name node_modules -o -name venv -o -name __pycache__ -o -name dist -o -name .git \) -prune -o -print | head -50
+demo: build ## Quick demo of the application
+	@echo "$(BLUE)Atlassian AI Assistant Demo$(NC)"
+	@echo "\n$(GREEN)1. CLI Chat Demo:$(NC)"
+	@echo "   Run: make chat"
+	@echo "\n$(GREEN)2. Desktop App Demo:$(NC)"
+	@echo "   Run: make app"
+	@echo "\n$(GREEN)3. Build Installer Demo:$(NC)"
+	@echo "   Run: make package"

@@ -1,33 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Dependencies
+node_modules/
 
-# Virtual Environment
-venv/
-.venv/
-env/
-ENV/
+# Build outputs
+dist/
 
 # Environment Variables
 .env
+.env.local
 
 # IDE
 .vscode/
@@ -42,3 +21,19 @@ Thumbs.db
 
 # Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Electron
+electron-app/dist/
+electron-app/backend-dist/
+electron-app/.claude-skills/
+
+# Test coverage
+coverage/
+
+# Cache
+.cache/
+.npm/
+.eslintcache

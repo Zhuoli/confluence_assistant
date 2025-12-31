@@ -1,0 +1,80 @@
+{
+  "name": "atlassian-ai-assistant",
+  "version": "3.0.0",
+  "description": "AI-powered assistant that integrates with enterprise Jira and Confluence instances",
+  "type": "module",
+  "main": "./dist/cli/index.js",
+  "bin": {
+    "atlassian-ai": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/cli/index.ts",
+    "dev:chat": "tsx src/cli/index.ts chat",
+    "build": "tsup",
+    "build:cli": "tsup src/cli/index.ts --format esm --dts",
+    "build:mcp": "tsup src/mcp/server.ts --format esm",
+    "build:all": "npm run build && cd electron-app && npm run build",
+    "mcp:start": "node dist/mcp/server.js",
+    "start:electron": "cd electron-app && npm start",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "npm run build"
+  },
+  "keywords": [
+    "jira",
+    "confluence",
+    "ai",
+    "assistant",
+    "atlassian",
+    "mcp",
+    "claude",
+    "openai",
+    "typescript"
+  ],
+  "author": "Your Name <your.email@company.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhuoli/confluence_assistant"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.27.0",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "openai": "^4.68.0",
+    "axios": "^1.6.0",
+    "axios-retry": "^4.5.0",
+    "dotenv": "^16.3.1",
+    "zod": "^3.23.8",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.0",
+    "chalk": "^5.3.0",
+    "ora": "^7.0.0",
+    "glob": "^10.3.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^11.0.0",
+    "pino": "^8.21.0",
+    "pino-pretty": "^10.2.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "@types/node": "^20.10.0",
+    "@types/inquirer": "^9.0.7",
+    "tsx": "^4.19.0",
+    "tsup": "^8.0.0",
+    "vitest": "^1.0.0",
+    "@vitest/ui": "^1.0.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "prettier": "^3.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

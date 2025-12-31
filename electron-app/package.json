@@ -1,15 +1,17 @@
 {
   "name": "atlassian-ai-assistant",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "AI-powered chatbot assistant for Jira and Confluence",
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
+    "prebuild": "rm -rf backend-dist && cp -r ../dist backend-dist && cp -r ../.claude .claude-skills",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
-    "build:linux": "electron-builder --linux"
+    "build:linux": "electron-builder --linux",
+    "postinstall": "cd .. && npm run build"
   },
   "keywords": [
     "atlassian",
@@ -17,7 +19,8 @@
     "confluence",
     "ai",
     "chatbot",
-    "assistant"
+    "assistant",
+    "typescript"
   ],
   "author": "Your Name",
   "license": "MIT",
@@ -26,8 +29,6 @@
     "electron-builder": "^24.9.1"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.0",
-    "axios": "^1.6.0",
     "dotenv": "^16.3.1",
     "marked": "^11.0.0"
   },
@@ -40,7 +41,28 @@
     "files": [
       "src/**/*",
       "assets/**/*",
-      "package.json"
+      "package.json",
+      "backend-dist/**/*.js",
+      "backend-dist/**/*.js.map",
+      ".claude-skills/**/*",
+      {
+        "from": "../node_modules",
+        "to": "node_modules",
+        "filter": [
+          "@anthropic-ai/**/*",
+          "@modelcontextprotocol/**/*",
+          "openai/**/*",
+          "axios/**/*",
+          "axios-retry/**/*",
+          "zod/**/*",
+          "commander/**/*",
+          "chalk/**/*",
+          "ora/**/*",
+          "gray-matter/**/*",
+          "pino/**/*",
+          "dotenv/**/*"
+        ]
+      }
     ],
     "mac": {
       "category": "public.app-category.productivity",
@@ -64,6 +86,7 @@
         "deb"
       ],
       "category": "Office"
-    }
+    },
+    "asar": true
   }
 }

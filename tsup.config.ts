@@ -1,0 +1,18 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: {
+    'cli/index': 'src/cli/index.ts',
+    'mcp/server': 'src/mcp/server.ts',
+  },
+  format: ['esm'],
+  dts: true,
+  splitting: false,
+  sourcemap: true,
+  clean: true,
+  shims: true,
+  target: 'node18',
+  banner: {
+    js: '#!/usr/bin/env node',
+  },
+});

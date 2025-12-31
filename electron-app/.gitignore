@@ -27,3 +27,7 @@ npm-debug.log*
 
 # Electron
 *.pid
+
+# Build artifacts
+backend-dist/
+.claude-skills/
