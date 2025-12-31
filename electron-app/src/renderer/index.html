@@ -87,107 +87,17 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>⚙️ Settings</h2>
-                <button class="close-btn" onclick="closeSettings()">×</button>
-            </div>
-            <div class="modal-body">
-                <!-- Model Provider Selection -->
-                <div class="form-group">
-                    <label>AI Provider</label>
-                    <select id="modelProvider" onchange="onProviderChange()">
-                        <option value="claude">Claude (Anthropic)</option>
-                        <option value="openai">OpenAI (ChatGPT)</option>
-                        <option value="oci-openai">OCI OpenAI (Oracle Cloud)</option>
-                    </select>
-                </div>
-
-                <!-- Model Name -->
-                <div class="form-group">
-                    <label>Model Name (Optional)</label>
-                    <input type="text" id="modelName" placeholder="Leave empty for default">
-                    <small class="hint">Examples: claude-3-5-sonnet-20241022, gpt-4, cohere.command-r-plus</small>
-                </div>
-
-                <!-- Conditional API Keys -->
-                <div class="form-group" id="anthropicKeyGroup">
-                    <label>Anthropic API Key</label>
-                    <input type="password" id="anthropicKey" placeholder="sk-ant-...">
-                </div>
-
-                <div class="form-group" id="openaiKeyGroup" style="display: none;">
-                    <label>OpenAI API Key</label>
-                    <input type="password" id="openaiKey" placeholder="sk-...">
-                </div>
-
-                <!-- OCI OpenAI Configuration -->
-                <div id="ociOpenAIGroup" style="display: none;">
-                    <div class="form-group">
-                        <label>OCI Compartment ID</label>
-                        <input type="text" id="ociCompartmentId" placeholder="ocid1.compartment.oc1..xxx">
-                    </div>
-                    <div class="form-group">
-                        <label>OCI Endpoint URL</label>
-                        <input type="text" id="ociEndpoint" placeholder="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com">
-                    </div>
-                    <div class="form-group">
-                        <label>OCI Config Path (Optional)</label>
-                        <input type="text" id="ociConfigPath" placeholder="~/.oci/config (default)">
-                        <small class="hint">Leave empty to use default ~/.oci/config</small>
-                    </div>
-                    <div class="form-group">
-                        <label>OCI Profile (Optional)</label>
-                        <input type="text" id="ociProfile" placeholder="DEFAULT (default)">
-                        <small class="hint">Leave empty to use DEFAULT profile</small>
-                    </div>
-                </div>
-
-                <!-- Test Connection Button -->
-                <div class="form-group">
-                    <button class="btn-test" onclick="testConnection()">🔌 Test Connection</button>
-                    <div id="testConnectionResult" class="test-result"></div>
-                </div>
-
-                <hr style="margin: 20px 0; border: none; border-top: 1px solid #e1e4e8;">
-
-                <div class="form-group">
-                    <label>Jira URL</label>
-                    <input type="text" id="jiraUrl" placeholder="https://jira.yourcompany.com">
-                </div>
-                <div class="form-group">
-                    <label>Jira Username</label>
-                    <input type="text" id="jiraUsername" placeholder="your.email@company.com">
-                </div>
-                <div class="form-group">
-                    <label>Jira API Token</label>
-                    <input type="password" id="jiraToken">
-                </div>
-                <div class="form-group">
-                    <label>Confluence URL</label>
-                    <input type="text" id="confluenceUrl" placeholder="https://confluence.yourcompany.com">
-                </div>
-                <div class="form-group">
-                    <label>Confluence Username</label>
-                    <input type="text" id="confluenceUsername" placeholder="your.email@company.com">
-                </div>
-                <div class="form-group">
-                    <label>Confluence API Token</label>
-                    <input type="password" id="confluenceToken">
-                </div>
-                <div class="form-group">
-                    <label>Confluence Space Key (optional)</label>
-                    <input type="text" id="confluenceSpace" placeholder="TEAM">
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
-                <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
-            </div>
-        </div>
-    </div>
+    <!-- Include Settings Modal -->
+    <script>
+        // Load settings HTML dynamically
+        fetch('settings.html')
+            .then(response => response.text())
+            .then(html => {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                document.body.appendChild(tempDiv.firstElementChild);
+            });
+    </script>
 
     <script src="renderer.js"></script>
 </body>

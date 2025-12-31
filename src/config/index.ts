@@ -26,6 +26,14 @@ export function loadConfig(): Config {
     ociConfigPath: process.env.OCI_CONFIG_PATH || undefined,
     ociProfile: process.env.OCI_PROFILE || undefined,
 
+    // OCI MCP (for Oracle Cloud resource management)
+    ociMcpEnabled: process.env.OCI_MCP_ENABLED === 'true',
+    ociMcpRegion: process.env.OCI_MCP_REGION || '',
+    ociMcpCompartmentId: process.env.OCI_MCP_COMPARTMENT_ID || '',
+    ociMcpTenancyId: process.env.OCI_MCP_TENANCY_ID || '',
+    ociMcpConfigPath: process.env.OCI_MCP_CONFIG_PATH || undefined,
+    ociMcpProfile: process.env.OCI_MCP_PROFILE || undefined,
+
     // Jira
     jiraUrl: process.env.JIRA_URL || '',
     jiraUsername: process.env.JIRA_USERNAME || '',

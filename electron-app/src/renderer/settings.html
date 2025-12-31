@@ -1,0 +1,275 @@
+<!-- Settings Modal -->
+<div id="settingsModal" class="modal">
+    <div class="modal-content settings-container">
+
+        <!-- Main Settings View -->
+        <div id="mainSettingsView" class="settings-view active">
+            <div class="modal-header">
+                <h2>⚙️ Settings</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="modal-body">
+                <!-- AI Provider Section -->
+                <div class="settings-section">
+                    <h3>🤖 AI Provider</h3>
+                    <div class="form-group">
+                        <label>Provider</label>
+                        <select id="modelProvider" onchange="onProviderChange()">
+                            <option value="claude">Claude (Anthropic)</option>
+                            <option value="openai">OpenAI (ChatGPT)</option>
+                            <option value="oci-openai">OCI OpenAI (Oracle Cloud)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Model Name (Optional)</label>
+                        <input type="text" id="modelName" placeholder="Leave empty for default">
+                        <small class="hint">Examples: claude-3-5-sonnet-20241022, gpt-4, cohere.command-r-plus</small>
+                    </div>
+
+                    <!-- Provider-specific API Keys -->
+                    <div class="form-group" id="anthropicKeyGroup">
+                        <label>Anthropic API Key <span class="required">*</span></label>
+                        <input type="password" id="anthropicKey" placeholder="sk-ant-...">
+                    </div>
+
+                    <div class="form-group" id="openaiKeyGroup" style="display: none;">
+                        <label>OpenAI API Key <span class="required">*</span></label>
+                        <input type="password" id="openaiKey" placeholder="sk-...">
+                    </div>
+
+                    <div id="ociOpenAIGroup" style="display: none;">
+                        <div class="form-group">
+                            <label>OCI Compartment ID <span class="required">*</span></label>
+                            <input type="text" id="ociCompartmentId" placeholder="ocid1.compartment.oc1..xxx">
+                        </div>
+                        <div class="form-group">
+                            <label>OCI Endpoint URL <span class="required">*</span></label>
+                            <input type="text" id="ociEndpoint" placeholder="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com">
+                        </div>
+                        <div class="form-group">
+                            <label>OCI Config Path (Optional)</label>
+                            <input type="text" id="ociConfigPath" placeholder="~/.oci/config (default)">
+                        </div>
+                        <div class="form-group">
+                            <label>OCI Profile (Optional)</label>
+                            <input type="text" id="ociProfile" placeholder="DEFAULT (default)">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn-test" onclick="testConnection()">🔌 Test Connection</button>
+                        <div id="testConnectionResult" class="test-result"></div>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <!-- MCP Servers Section -->
+                <div class="settings-section">
+                    <h3>🔌 MCP Servers</h3>
+                    <p class="section-description">
+                        Enable and configure Model Context Protocol servers to extend AI capabilities.
+                    </p>
+
+                    <!-- Atlassian MCP -->
+                    <div class="mcp-server-card">
+                        <div class="mcp-server-header">
+                            <div class="mcp-server-info">
+                                <div class="mcp-server-icon">📋</div>
+                                <div>
+                                    <h4>Atlassian MCP</h4>
+                                    <p class="mcp-server-desc">Access Jira and Confluence</p>
+                                </div>
+                            </div>
+                            <div class="mcp-server-actions">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="atlassianMcpEnabled" checked disabled>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <button class="btn-configure" onclick="openAtlassianMcpSettings()">
+                                    Configure →
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mcp-server-status">
+                            <span class="status-badge required">Required</span>
+                            <span class="status-text">10 tools available</span>
+                        </div>
+                    </div>
+
+                    <!-- Oracle Cloud MCP -->
+                    <div class="mcp-server-card">
+                        <div class="mcp-server-header">
+                            <div class="mcp-server-info">
+                                <div class="mcp-server-icon">☁️</div>
+                                <div>
+                                    <h4>Oracle Cloud MCP</h4>
+                                    <p class="mcp-server-desc">Manage OCI resources</p>
+                                </div>
+                            </div>
+                            <div class="mcp-server-actions">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="ociMcpEnabled" onchange="onOciMcpToggle()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <button class="btn-configure" onclick="openOciMcpSettings()" id="ociMcpConfigureBtn" disabled>
+                                    Configure →
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mcp-server-status">
+                            <span class="status-badge optional">Optional</span>
+                            <span class="status-text">10 tools available</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeSettings()">Cancel</button>
+                <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+            </div>
+        </div>
+
+        <!-- Atlassian MCP Settings View -->
+        <div id="atlassianMcpView" class="settings-view">
+            <div class="modal-header">
+                <button class="back-btn" onclick="backToMainSettings()">← Back</button>
+                <h2>📋 Atlassian MCP Configuration</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Jira Configuration</h3>
+                    <div class="form-group">
+                        <label>Jira URL <span class="required">*</span></label>
+                        <input type="text" id="jiraUrl" placeholder="https://jira.yourcompany.com">
+                        <small class="hint">Your Jira instance URL (cloud or self-hosted)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Jira Username <span class="required">*</span></label>
+                        <input type="text" id="jiraUsername" placeholder="your.email@company.com">
+                        <small class="hint">Usually your email address</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Jira API Token <span class="required">*</span></label>
+                        <input type="password" id="jiraToken">
+                        <small class="hint">Personal Access Token from Jira</small>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <div class="settings-section">
+                    <h3>Confluence Configuration</h3>
+                    <div class="form-group">
+                        <label>Confluence URL <span class="required">*</span></label>
+                        <input type="text" id="confluenceUrl" placeholder="https://confluence.yourcompany.com">
+                        <small class="hint">Your Confluence instance URL</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Confluence Username <span class="required">*</span></label>
+                        <input type="text" id="confluenceUsername" placeholder="your.email@company.com">
+                        <small class="hint">Usually same as Jira username</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Confluence API Token <span class="required">*</span></label>
+                        <input type="password" id="confluenceToken">
+                        <small class="hint">Personal Access Token from Confluence</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Confluence Space Key (Optional)</label>
+                        <input type="text" id="confluenceSpace" placeholder="TEAM">
+                        <small class="hint">Default space to search in</small>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>📘 How to get API tokens:</strong>
+                    <ul>
+                        <li><strong>Self-hosted:</strong> Profile → Personal Access Tokens</li>
+                        <li><strong>Cloud:</strong> <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank">Atlassian API Tokens</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="backToMainSettings()">← Back</button>
+                <button class="btn-primary" onclick="saveAtlassianMcpSettings()">Save Configuration</button>
+            </div>
+        </div>
+
+        <!-- Oracle Cloud MCP Settings View -->
+        <div id="ociMcpView" class="settings-view">
+            <div class="modal-header">
+                <button class="back-btn" onclick="backToMainSettings()">← Back</button>
+                <h2>☁️ Oracle Cloud MCP Configuration</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="warning-box">
+                    <strong>⚠️ Session Token Required</strong>
+                    <p>
+                        Oracle Cloud MCP uses ONLY session token authentication for security.
+                        Before configuring, create a session token:
+                    </p>
+                    <code>oci session authenticate --profile-name DEFAULT --region us-phoenix-1</code>
+                </div>
+
+                <div class="settings-section">
+                    <h3>OCI Configuration</h3>
+                    <div class="form-group">
+                        <label>OCI Region <span class="required">*</span></label>
+                        <input type="text" id="ociMcpRegion" placeholder="us-phoenix-1">
+                        <small class="hint">Examples: us-phoenix-1, us-ashburn-1, eu-frankfurt-1</small>
+                    </div>
+                    <div class="form-group">
+                        <label>OCI Compartment ID <span class="required">*</span></label>
+                        <input type="text" id="ociMcpCompartmentId" placeholder="ocid1.compartment.oc1..xxx">
+                        <small class="hint">Compartment where your resources are located</small>
+                    </div>
+                    <div class="form-group">
+                        <label>OCI Tenancy ID <span class="required">*</span></label>
+                        <input type="text" id="ociMcpTenancyId" placeholder="ocid1.tenancy.oc1..xxx">
+                        <small class="hint">Your OCI tenancy OCID</small>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <div class="settings-section">
+                    <h3>Advanced Options</h3>
+                    <div class="form-group">
+                        <label>OCI Config Path (Optional)</label>
+                        <input type="text" id="ociMcpConfigPath" placeholder="~/.oci/config (default)">
+                        <small class="hint">Leave empty to use default ~/.oci/config</small>
+                    </div>
+                    <div class="form-group">
+                        <label>OCI Profile (Optional)</label>
+                        <input type="text" id="ociMcpProfile" placeholder="DEFAULT (default)">
+                        <small class="hint">Leave empty to use DEFAULT profile</small>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <strong>📘 Finding your OCIDs:</strong>
+                    <ul>
+                        <li><code>oci iam compartment list</code> - List compartments</li>
+                        <li><code>oci iam tenancy get</code> - Get tenancy ID</li>
+                        <li>Or find them in the OCI Console navigation menu</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="backToMainSettings()">← Back</button>
+                <button class="btn-primary" onclick="saveOciMcpSettings()">Save Configuration</button>
+            </div>
+        </div>
+
+    </div>
+</div>

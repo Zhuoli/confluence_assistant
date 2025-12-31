@@ -370,8 +370,10 @@ body {
     border-radius: 8px;
     width: 90%;
     max-width: 600px;
-    max-height: 90vh;
-    overflow-y: auto;
+    height: 85vh;
+    max-height: 700px;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
@@ -379,12 +381,15 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px;
+    padding: 16px 24px;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    min-height: 60px;
 }
 
 .modal-header h2 {
-    font-size: 20px;
+    font-size: 18px;
+    font-weight: 600;
 }
 
 .close-btn {
@@ -397,11 +402,18 @@ body {
 }
 
 .modal-body {
-    padding: 24px;
+    padding: 18px 24px;
+    overflow-y: scroll;
+    flex: 1 1 auto;
+    min-height: 0;
+    -webkit-overflow-scrolling: touch;
+    /* Debug borders - remove after confirming it works */
+    border: 2px solid #e74c3c;
+    background-color: #fafafa;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .form-group label {
@@ -454,8 +466,10 @@ body {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
-    padding: 16px 24px;
+    padding: 14px 24px;
     border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+    min-height: 62px;
 }
 
 .btn-primary,
@@ -489,7 +503,7 @@ body {
 }
 
 .btn-test {
-    padding: 10px 20px;
+    padding: 10px 16px;
     border: 2px solid var(--primary-color);
     border-radius: 6px;
     font-size: 14px;
@@ -516,7 +530,7 @@ body {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 ::-webkit-scrollbar-track {
@@ -530,4 +544,321 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
+}
+
+/* Modal body scrollbar - make it more visible */
+.modal-body::-webkit-scrollbar {
+    width: 10px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+/* Multi-Page Settings UI */
+.settings-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-view {
+    display: none;
+    width: 100%;
+    height: 100%;
+    animation: slideIn 0.3s ease-out;
+}
+
+.settings-view.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Settings Sections */
+.settings-section {
+    margin-bottom: 20px;
+}
+
+.settings-section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.section-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.settings-divider {
+    margin: 20px 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Required Field Indicator */
+.required {
+    color: var(--danger-color);
+}
+
+/* Back Button */
+.back-btn {
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--primary-color);
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.back-btn:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* MCP Server Cards */
+.mcp-server-card {
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+    background-color: var(--bg-primary);
+    transition: all 0.2s;
+}
+
+.mcp-server-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 82, 204, 0.1);
+}
+
+.mcp-server-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.mcp-server-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mcp-server-icon {
+    font-size: 28px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+}
+
+.mcp-server-info h4 {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+}
+
+.mcp-server-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.mcp-server-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 24px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--bg-tertiary);
+    transition: 0.3s;
+    border-radius: 24px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--success-color);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Configure Button */
+.btn-configure {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: white;
+    color: var(--primary-color);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-configure:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-configure:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    color: var(--text-secondary);
+}
+
+/* MCP Server Status */
+.mcp-server-status {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+}
+
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.required {
+    background-color: #FFF3CD;
+    color: #856404;
+}
+
+.status-badge.optional {
+    background-color: #D1ECF1;
+    color: #0C5460;
+}
+
+.status-text {
+    color: var(--text-secondary);
+}
+
+/* Info and Warning Boxes */
+.info-box,
+.warning-box {
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 24px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.info-box {
+    background-color: #D1ECF1;
+    border: 1px solid #BEE5EB;
+    color: #0C5460;
+}
+
+.warning-box {
+    background-color: #FFF3CD;
+    border: 1px solid #FFEAA7;
+    color: #856404;
+}
+
+.info-box strong,
+.warning-box strong {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.info-box ul,
+.warning-box ul {
+    margin: 8px 0 0 20px;
+}
+
+.info-box li,
+.warning-box li {
+    margin-bottom: 4px;
+}
+
+.info-box code,
+.warning-box code {
+    display: block;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 12px;
+    margin-top: 8px;
+    word-break: break-all;
+}
+
+.info-box a {
+    color: #0C5460;
+    text-decoration: underline;
 }

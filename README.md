@@ -56,11 +56,19 @@ make package-linux   # Linux .AppImage
 - ✅ Get recently updated pages
 - ✅ AI-powered summarization
 
+### ☁️ Oracle Cloud Integration
+- ✅ **OCI MCP Server**: Manage Oracle Cloud Infrastructure resources
+- ✅ **Session Token Auth**: Secure authentication using OCI session tokens
+- ✅ **Compute Management**: List and inspect compute instances
+- ✅ **OKE Clusters**: Manage Oracle Kubernetes Engine clusters and node pools
+- ✅ **Bastion Hosts**: List bastions and active sessions
+- ✅ **Compartments**: Browse organizational hierarchy
+
 ### 🏢 Enterprise-Ready
 - ✅ Works with **self-hosted/on-premise** Atlassian instances
 - ✅ Support for **custom domains** (e.g., confluence.companyinternal.com)
 - ✅ **SSO compatible** via Personal Access Tokens (PAT)
-- ✅ **MCP Architecture**: Modern, extensible design
+- ✅ **MCP Architecture**: Modern, extensible design with multiple MCP servers
 - ✅ **Fully configurable** - works with any Jira/Confluence deployment
 
 ---
@@ -81,29 +89,31 @@ make package-linux   # Linux .AppImage
 ## Architecture
 
 ```
-┌────────────────────────────────┐
-│  Electron Desktop App          │
-│  - Modern UI                   │
-│  - IPC Communication           │
-└────────────┬───────────────────┘
-             │
-             ↓ (Node.js CLI)
-┌────────────────────────────────┐
-│  TypeScript Agent SDK          │
-│  ├─ Config (Zod validation)    │
-│  ├─ MCP Server (10 tools)      │
-│  ├─ Skills Loader (12 skills)  │
-│  ├─ Providers (3 supported):   │
-│  │  - Claude (Anthropic)       │
-│  │  - OpenAI (ChatGPT)         │
-│  │  - OCI OpenAI (Oracle)      │
-│  └─ API Clients (Axios-based)  │
-└────────────┬───────────────────┘
-             │
-             ↓ (REST APIs)
-┌────────────────────────────────┐
-│  Jira  │  Confluence           │
-└────────────────────────────────┘
+┌──────────────────────────────────────────┐
+│  Electron Desktop App                    │
+│  - Modern UI                             │
+│  - IPC Communication                     │
+└──────────────┬───────────────────────────┘
+               │
+               ↓ (Node.js CLI)
+┌──────────────────────────────────────────┐
+│  TypeScript Agent SDK                    │
+│  ├─ Config (Zod validation)              │
+│  ├─ MCP Servers:                         │
+│  │  • Atlassian MCP (10 tools)           │
+│  │  • Oracle Cloud MCP (10 tools)        │
+│  ├─ Skills Loader (12 skills)            │
+│  ├─ Providers (3 supported):             │
+│  │  - Claude (Anthropic)                 │
+│  │  - OpenAI (ChatGPT)                   │
+│  │  - OCI OpenAI (Oracle)                │
+│  └─ API Clients (Axios-based)            │
+└──────────────┬───────────────────────────┘
+               │
+               ↓ (REST APIs / OCI SDK)
+┌──────────────────────────────────────────┐
+│  Jira  │  Confluence  │  Oracle Cloud    │
+└──────────────────────────────────────────┘
 ```
 
 **Key Technologies:**
@@ -194,6 +204,129 @@ This tool uses **Personal Access Tokens (PAT)** which work with enterprise SSO s
 
 ---
 
+## Oracle Cloud MCP Server (Optional)
+
+The Oracle Cloud MCP Server provides AI-powered tools for managing OCI resources.
+
+### Prerequisites
+
+1. **OCI CLI installed**: Install from https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm
+2. **OCI account** with access to resources
+3. **Session Token authentication** (REQUIRED - this is the ONLY supported auth method)
+
+### Setup OCI Session Token
+
+**IMPORTANT**: The OCI MCP server uses ONLY Session Token authentication for security.
+
+```bash
+# Create a session token (opens browser for authentication)
+oci session authenticate --profile-name DEFAULT --region us-phoenix-1
+
+# Verify session token is created
+cat ~/.oci/config
+# You should see session_token and related files listed
+```
+
+### Configure OCI MCP
+
+**For Electron Desktop App (Recommended):**
+
+1. Launch the Atlassian AI Assistant application
+2. Click **⚙️ Settings** in the sidebar
+3. Scroll to **🔌 MCP Servers** section
+4. Enable **Oracle Cloud MCP** toggle
+5. Click **Configure →** button
+6. Fill in:
+   - OCI Region (e.g., `us-phoenix-1`)
+   - OCI Compartment ID (e.g., `ocid1.compartment.oc1..xxx`)
+   - OCI Tenancy ID (e.g., `ocid1.tenancy.oc1..xxx`)
+7. Click **Save Configuration**
+
+Settings are automatically saved to your user directory and persist across app restarts.
+
+**For CLI/Development (.env):**
+
+```bash
+# Enable OCI MCP
+OCI_MCP_ENABLED=true
+
+# OCI Region
+OCI_MCP_REGION=us-phoenix-1
+
+# OCI Compartment ID (where your resources are located)
+OCI_MCP_COMPARTMENT_ID=ocid1.compartment.oc1..aaaaaaaa...
+
+# OCI Tenancy ID
+OCI_MCP_TENANCY_ID=ocid1.tenancy.oc1..aaaaaaaa...
+
+# Optional: Custom config path (defaults to ~/.oci/config)
+OCI_MCP_CONFIG_PATH=
+
+# Optional: Profile name (defaults to DEFAULT)
+OCI_MCP_PROFILE=
+```
+
+### Using OCI MCP Server
+
+**Standalone MCP Server:**
+```bash
+# Start OCI MCP server
+npm run mcp:oci
+
+# Or directly
+node dist/mcp/oci-server.js
+```
+
+**Available OCI Tools (10 tools):**
+1. `test_oci_connection` - Test OCI authentication and connectivity
+2. `list_oci_compartments` - List all compartments in tenancy
+3. `list_oci_instances` - List compute instances
+4. `get_oci_instance` - Get instance details
+5. `list_oke_clusters` - List OKE (Kubernetes) clusters
+6. `get_oke_cluster` - Get OKE cluster details
+7. `list_oke_node_pools` - List node pools for a cluster
+8. `list_oci_bastions` - List bastion hosts
+9. `get_oci_bastion` - Get bastion details
+10. `list_bastion_sessions` - List active bastion sessions
+
+**Example Usage (via CLI):**
+```bash
+# Test OCI connection
+"Test my OCI connection"
+
+# List all compute instances
+"Show me all compute instances in my compartment"
+
+# List OKE clusters
+"What OKE clusters do I have?"
+
+# Get details of a specific cluster
+"Show me details of cluster ocid1.cluster.oc1.phx.xxx"
+```
+
+### Finding Your OCIDs
+
+```bash
+# Get your Tenancy ID
+oci iam tenancy get --tenancy-id <tenancy-ocid>
+
+# List compartments
+oci iam compartment list --compartment-id-in-subtree true
+
+# Get current user info
+oci iam user get --user-id <user-ocid>
+```
+
+### Session Token Renewal
+
+Session tokens expire after a period of time. When expired, simply re-authenticate:
+
+```bash
+oci session authenticate --profile-name DEFAULT --region us-phoenix-1
+```
+
+---
+
 ## Usage
 
 ### Desktop Application (Primary)
@@ -210,6 +343,31 @@ cd electron-app && npm start
 - Click quick action buttons for common tasks
 - Type messages in the chat box
 - View formatted responses with links
+- Configure settings through the **⚙️ Settings** interface
+
+### Configuring the Desktop App
+
+**All configuration is done through the Settings UI - no .env file needed!**
+
+1. Click **⚙️ Settings** in the sidebar
+2. **Main Settings Page:**
+   - Choose AI Provider (Claude, OpenAI, or OCI OpenAI)
+   - Enter provider-specific credentials
+   - Test connection
+   - Enable/disable MCP servers
+
+3. **Configure MCP Servers:**
+   - **Atlassian MCP** (Required) - Click "Configure →" to set up Jira/Confluence
+   - **Oracle Cloud MCP** (Optional) - Enable toggle, then click "Configure →"
+
+4. Click **Save Settings**
+
+Settings are automatically saved to:
+- **macOS:** `~/Library/Application Support/Atlassian AI Assistant/config.json`
+- **Windows:** `%APPDATA%/Atlassian AI Assistant/config.json`
+- **Linux:** `~/.config/Atlassian AI Assistant/config.json`
+
+Settings persist across app restarts and updates!
 
 ### Command Line Interface (Optional)
 
@@ -281,6 +439,12 @@ Or right-click the app → "Open" → Click "Open" in the dialog.
 | `MODEL_NAME` | No | Custom model name | `claude-3-5-sonnet-20241022` |
 | `ANTHROPIC_API_KEY` | Yes* | Anthropic API key | `sk-ant-xxx...` |
 | `OPENAI_API_KEY` | Yes* | OpenAI API key | `sk-xxx...` |
+| `OCI_MCP_ENABLED` | No | Enable OCI MCP server | `true` or `false` (default: false) |
+| `OCI_MCP_REGION` | Yes** | OCI region for resource management | `us-phoenix-1` |
+| `OCI_MCP_COMPARTMENT_ID` | Yes** | OCI Compartment ID for MCP | `ocid1.compartment.oc1..xxx` |
+| `OCI_MCP_TENANCY_ID` | Yes** | OCI Tenancy ID | `ocid1.tenancy.oc1..xxx` |
+| `OCI_MCP_CONFIG_PATH` | No | OCI config file path for MCP | `~/.oci/config` |
+| `OCI_MCP_PROFILE` | No | OCI profile name for MCP | `DEFAULT` |
 | `JIRA_URL` | Yes | Jira instance URL | `https://jira.company.com` |
 | `JIRA_USERNAME` | Yes | Jira username/email | `user@company.com` |
 | `JIRA_API_TOKEN` | Yes | Jira PAT | `your_token` |
@@ -292,6 +456,7 @@ Or right-click the app → "Open" → Click "Open" in the dialog.
 | `USER_EMAIL` | No | Your email | `user@company.com` |
 
 *One of `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` is required depending on `MODEL_PROVIDER`
+**Required only when `OCI_MCP_ENABLED=true`
 
 ---
 
@@ -306,16 +471,20 @@ confluence_assistant/
 │
 ├── src/                      # TypeScript source code
 │   ├── config/              # Configuration (Zod schemas)
-│   ├── api/                 # Jira/Confluence REST clients
-│   ├── mcp/                 # MCP server + 10 tools
+│   ├── api/                 # API clients (Jira/Confluence/OCI)
+│   ├── mcp/                 # MCP servers + tools
+│   │   ├── server.ts       # Atlassian MCP server
+│   │   ├── oci-server.ts   # Oracle Cloud MCP server
+│   │   └── tools/          # Tool implementations
 │   ├── skills/              # Skills loader
-│   ├── providers/           # AI providers (Claude/OpenAI)
+│   ├── providers/           # AI providers (Claude/OpenAI/OCI)
 │   ├── agent/               # Agent orchestrator
 │   └── cli/                 # CLI interface
 │
 ├── dist/                     # Compiled JavaScript
 │   ├── cli/index.js         # CLI entry point
-│   └── mcp/server.js        # MCP server
+│   ├── mcp/server.js        # Atlassian MCP server
+│   └── mcp/oci-server.js    # Oracle Cloud MCP server
 │
 ├── electron-app/             # Electron desktop application
 │   ├── src/                 # Electron source code

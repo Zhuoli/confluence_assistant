@@ -211,12 +211,52 @@ function clearChat() {
 }
 
 function openSettings() {
-    settingsModal.classList.add('show');
-    loadSettings();
+    // Wait for settings HTML to load
+    const checkModal = setInterval(() => {
+        const modal = document.getElementById('settingsModal');
+        if (modal) {
+            clearInterval(checkModal);
+            modal.classList.add('show');
+            showSettingsView('mainSettingsView');
+            loadSettings();
+        }
+    }, 100);
 }
 
 function closeSettings() {
-    settingsModal.classList.remove('show');
+    const modal = document.getElementById('settingsModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+}
+
+function showSettingsView(viewId) {
+    // Hide all views
+    const views = document.querySelectorAll('.settings-view');
+    views.forEach(view => view.classList.remove('active'));
+
+    // Show selected view
+    const selectedView = document.getElementById(viewId);
+    if (selectedView) {
+        selectedView.classList.add('active');
+    }
+}
+
+function backToMainSettings() {
+    showSettingsView('mainSettingsView');
+}
+
+function openAtlassianMcpSettings() {
+    showSettingsView('atlassianMcpView');
+}
+
+function openOciMcpSettings() {
+    const enabled = document.getElementById('ociMcpEnabled').checked;
+    if (!enabled) {
+        alert('Please enable Oracle Cloud MCP first');
+        return;
+    }
+    showSettingsView('ociMcpView');
 }
 
 function onProviderChange() {
@@ -240,6 +280,25 @@ function onProviderChange() {
     }
 }
 
+function onOciMcpToggle() {
+    const enabled = document.getElementById('ociMcpEnabled').checked;
+    const configureBtn = document.getElementById('ociMcpConfigureBtn');
+
+    if (configureBtn) {
+        configureBtn.disabled = !enabled;
+    }
+}
+
+function saveAtlassianMcpSettings() {
+    // Save and return to main view
+    saveSettings();
+}
+
+function saveOciMcpSettings() {
+    // Save and return to main view
+    saveSettings();
+}
+
 function loadSettings() {
     ipcRenderer.send('get-settings');
     ipcRenderer.once('settings-loaded', (event, settings) => {
@@ -256,6 +315,14 @@ function loadSettings() {
             document.getElementById('ociConfigPath').value = settings.OCI_CONFIG_PATH || '';
             document.getElementById('ociProfile').value = settings.OCI_PROFILE || '';
 
+            // OCI MCP settings
+            document.getElementById('ociMcpEnabled').checked = settings.OCI_MCP_ENABLED === 'true' || settings.OCI_MCP_ENABLED === true;
+            document.getElementById('ociMcpRegion').value = settings.OCI_MCP_REGION || '';
+            document.getElementById('ociMcpCompartmentId').value = settings.OCI_MCP_COMPARTMENT_ID || '';
+            document.getElementById('ociMcpTenancyId').value = settings.OCI_MCP_TENANCY_ID || '';
+            document.getElementById('ociMcpConfigPath').value = settings.OCI_MCP_CONFIG_PATH || '';
+            document.getElementById('ociMcpProfile').value = settings.OCI_MCP_PROFILE || '';
+
             // Jira settings
             document.getElementById('jiraUrl').value = settings.JIRA_URL || '';
             document.getElementById('jiraUsername').value = settings.JIRA_USERNAME || '';
@@ -269,6 +336,7 @@ function loadSettings() {
 
             // Update UI based on provider
             onProviderChange();
+            onOciMcpToggle();
         }
     });
 }
@@ -286,6 +354,14 @@ function saveSettings() {
         OCI_ENDPOINT: document.getElementById('ociEndpoint').value,
         OCI_CONFIG_PATH: document.getElementById('ociConfigPath').value,
         OCI_PROFILE: document.getElementById('ociProfile').value,
+
+        // OCI MCP settings
+        OCI_MCP_ENABLED: document.getElementById('ociMcpEnabled').checked ? 'true' : 'false',
+        OCI_MCP_REGION: document.getElementById('ociMcpRegion').value,
+        OCI_MCP_COMPARTMENT_ID: document.getElementById('ociMcpCompartmentId').value,
+        OCI_MCP_TENANCY_ID: document.getElementById('ociMcpTenancyId').value,
+        OCI_MCP_CONFIG_PATH: document.getElementById('ociMcpConfigPath').value,
+        OCI_MCP_PROFILE: document.getElementById('ociMcpProfile').value,
 
         // Jira settings
         JIRA_URL: document.getElementById('jiraUrl').value,
@@ -305,8 +381,18 @@ function saveSettings() {
     ipcRenderer.send('save-settings', settings);
     ipcRenderer.once('settings-saved', (event, success) => {
         if (success) {
-            alert('Settings saved successfully!');
-            closeSettings();
+            // Show success message
+            const currentView = document.querySelector('.settings-view.active');
+            if (currentView && currentView.id !== 'mainSettingsView') {
+                // Return to main view if saving from sub-view
+                showSettingsView('mainSettingsView');
+                setTimeout(() => {
+                    alert('Configuration saved successfully!');
+                }, 300);
+            } else {
+                alert('Settings saved successfully!');
+                closeSettings();
+            }
             checkConfiguration();
         } else {
             alert('Failed to save settings. Please try again.');

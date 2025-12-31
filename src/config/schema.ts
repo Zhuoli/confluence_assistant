@@ -49,6 +49,37 @@ export const ConfigSchema = z
       .optional()
       .describe('OCI profile name (defaults to DEFAULT)'),
 
+    // OCI MCP Configuration (for Oracle Cloud resource management)
+    ociMcpEnabled: z
+      .boolean()
+      .default(false)
+      .describe('Enable OCI MCP server for Oracle Cloud resource management'),
+
+    ociMcpRegion: z
+      .string()
+      .default('')
+      .describe('OCI region for resource management (e.g., us-phoenix-1, us-ashburn-1)'),
+
+    ociMcpCompartmentId: z
+      .string()
+      .default('')
+      .describe('OCI Compartment ID for resource management'),
+
+    ociMcpTenancyId: z
+      .string()
+      .default('')
+      .describe('OCI Tenancy ID (OCID)'),
+
+    ociMcpConfigPath: z
+      .string()
+      .optional()
+      .describe('Path to OCI config file for MCP (defaults to ociConfigPath or ~/.oci/config)'),
+
+    ociMcpProfile: z
+      .string()
+      .optional()
+      .describe('OCI profile name for MCP (defaults to ociProfile or DEFAULT)'),
+
     // Jira Configuration
     jiraUrl: z
       .string()
@@ -114,6 +145,23 @@ export const ConfigSchema = z
     {
       message: 'API key or credentials required for selected provider',
       path: ['anthropicApiKey', 'openaiApiKey', 'ociCompartmentId', 'ociEndpoint'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Validate OCI MCP configuration when enabled
+      if (data.ociMcpEnabled) {
+        return (
+          data.ociMcpRegion.length > 0 &&
+          data.ociMcpCompartmentId.length > 0 &&
+          data.ociMcpTenancyId.length > 0
+        );
+      }
+      return true;
+    },
+    {
+      message: 'OCI MCP requires region, compartment ID, and tenancy ID when enabled',
+      path: ['ociMcpRegion', 'ociMcpCompartmentId', 'ociMcpTenancyId'],
     }
   );
 

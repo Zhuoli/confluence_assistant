@@ -206,7 +206,14 @@ class AgentClient {
                     CONFLUENCE_API_TOKEN: this.config.CONFLUENCE_API_TOKEN,
                     CONFLUENCE_SPACE_KEY: this.config.CONFLUENCE_SPACE_KEY,
                     USER_EMAIL: this.config.USER_EMAIL,
-                    USER_DISPLAY_NAME: this.config.USER_DISPLAY_NAME
+                    USER_DISPLAY_NAME: this.config.USER_DISPLAY_NAME,
+                    // OCI MCP settings
+                    OCI_MCP_ENABLED: this.config.OCI_MCP_ENABLED || 'false',
+                    OCI_MCP_REGION: this.config.OCI_MCP_REGION || '',
+                    OCI_MCP_COMPARTMENT_ID: this.config.OCI_MCP_COMPARTMENT_ID || '',
+                    OCI_MCP_TENANCY_ID: this.config.OCI_MCP_TENANCY_ID || '',
+                    OCI_MCP_CONFIG_PATH: this.config.OCI_MCP_CONFIG_PATH || '',
+                    OCI_MCP_PROFILE: this.config.OCI_MCP_PROFILE || ''
                 }
             });
 
