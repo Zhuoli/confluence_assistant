@@ -8,6 +8,42 @@ const ConfigManager = require('../backend/config');
 let mainWindow;
 let agentClient;
 let configManager;
+let logStream;
+
+// Set up production logging
+function setupLogging() {
+    const logDir = path.join(app.getPath('userData'), 'logs');
+    if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+    }
+
+    const logFile = path.join(logDir, `app-${new Date().toISOString().split('T')[0]}.log`);
+    logStream = fs.createWriteStream(logFile, { flags: 'a' });
+
+    // Override console methods to write to file
+    const originalLog = console.log;
+    const originalError = console.error;
+
+    console.log = (...args) => {
+        const message = `[${new Date().toISOString()}] LOG: ${args.join(' ')}\n`;
+        logStream.write(message);
+        originalLog.apply(console, args);
+    };
+
+    console.error = (...args) => {
+        const message = `[${new Date().toISOString()}] ERROR: ${args.join(' ')}\n`;
+        logStream.write(message);
+        originalError.apply(console, args);
+    };
+
+    console.log('Logging initialized. Log file:', logFile);
+    console.log('App version:', app.getVersion());
+    console.log('Electron version:', process.versions.electron);
+    console.log('Node version:', process.versions.node);
+    console.log('Platform:', process.platform);
+    console.log('App path:', app.getAppPath());
+    console.log('User data:', app.getPath('userData'));
+}
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -41,6 +77,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+    // Set up logging for production
+    setupLogging();
+
     // Initialize configuration manager
     configManager = new ConfigManager();
 
@@ -63,6 +102,12 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
+    }
+});
+
+app.on('quit', () => {
+    if (logStream) {
+        logStream.end();
     }
 });
 
@@ -98,11 +143,51 @@ ipcMain.on('test-connection', async (event, settings) => {
     try {
         const { spawn } = require('child_process');
         const path = require('path');
+        const fs = require('fs');
 
-        // Create a temporary test by trying to initialize the provider
-        // We'll use the CLI with a test message
-        const projectRoot = path.join(__dirname, '..', '..');
-        const cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
+        // Determine the correct paths based on whether we're in dev or packaged mode
+        // In dev mode: __dirname is electron-app/src/main
+        // In packaged mode: __dirname is inside the .app bundle
+        let projectRoot;
+        let cliPath;
+
+        // Determine paths based on dev vs packaged mode
+        console.log('Test connection - environment info:');
+        console.log('  __dirname:', __dirname);
+        console.log('  app.isPackaged:', app.isPackaged);
+        console.log('  app.getAppPath():', app.getAppPath());
+        console.log('  process.resourcesPath:', process.resourcesPath);
+
+        if (app.isPackaged) {
+            // Packaged mode
+            // Files are in .asar.unpacked next to the .asar file
+            const resourcesPath = process.resourcesPath;
+            projectRoot = path.join(resourcesPath, 'app.asar.unpacked');
+            cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
+            console.log('  Mode: Packaged (using .asar.unpacked)');
+        } else {
+            // Dev mode
+            projectRoot = path.join(__dirname, '..', '..');
+            cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
+            console.log('  Mode: Development');
+        }
+
+        console.log('  projectRoot:', projectRoot);
+        console.log('  cliPath:', cliPath);
+
+        // Verify paths exist
+        if (!fs.existsSync(projectRoot)) {
+            throw new Error(`Project root does not exist: ${projectRoot}`);
+        }
+        if (!fs.existsSync(cliPath)) {
+            throw new Error(`CLI file does not exist: ${cliPath}. Run 'npm run prebuild' first.`);
+        }
+
+        // Verify projectRoot is a directory
+        const stats = fs.statSync(projectRoot);
+        if (!stats.isDirectory()) {
+            throw new Error(`Project root is not a directory: ${projectRoot}`);
+        }
 
         // For testing, we'll try to create the provider and send a simple message
         const provider = settings.MODEL_PROVIDER || 'claude';
@@ -149,6 +234,12 @@ ipcMain.on('test-connection', async (event, settings) => {
             '--message',
             'Hello, this is a connection test.'
         ];
+
+        // Use Node.js from the system
+        // On macOS, 'node' should be in PATH
+        console.log('Spawning Node.js process...');
+        console.log('  Command: node', args.join(' '));
+        console.log('  Working directory:', projectRoot);
 
         const testProcess = spawn('node', args, {
             cwd: projectRoot,
