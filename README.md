@@ -224,25 +224,22 @@ make confluence-search QUERY="API documentation"
 ### Building Installers
 
 ```bash
-# Build for current platform
-make package
-
-# Build for specific platforms
-make package-mac     # macOS .dmg
-make package-win     # Windows .exe
-make package-linux   # Linux .AppImage and .deb
+# Build macOS ARM64 .dmg installer (Apple Silicon M1/M2/M3/M4)
+make package-mac
 ```
 
 **Output:** Installers in `electron-app/dist/`
+- DMG file: `Atlassian AI Assistant-3.0.0-arm64.dmg`
+- ZIP file: `Atlassian AI Assistant-3.0.0-arm64-mac.zip`
 
 ### Automated Builds & Distribution with GitHub Actions
 
 This repository includes **GitHub Actions workflows** for automated building and releasing:
 
 - **Automatic builds** on every push to `main` branch
+- **macOS Apple Silicon (ARM64)** optimized builds
 - **Create releases** by pushing version tags (e.g., `git tag v3.0.0 && git push origin v3.0.0`)
-- **Multi-platform builds** (macOS, Windows, Linux) run in parallel
-- **GitHub Releases** with installers automatically uploaded
+- **GitHub Releases** with DMG installers automatically uploaded
 
 **Quick release workflow:**
 ```bash
@@ -256,7 +253,7 @@ git push
 git tag v3.0.0
 git push origin v3.0.0
 
-# 4. GitHub Actions automatically builds and creates release!
+# 4. GitHub Actions automatically builds ARM64 installer and creates release!
 ```
 
 📖 **For detailed instructions**, see [BUILD_AND_DISTRIBUTION.md](BUILD_AND_DISTRIBUTION.md)

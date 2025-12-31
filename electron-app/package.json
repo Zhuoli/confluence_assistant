@@ -68,8 +68,14 @@
       "category": "public.app-category.productivity",
       "icon": "assets/icon.icns",
       "target": [
-        "dmg",
-        "zip"
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
       ]
     },
     "win": {
