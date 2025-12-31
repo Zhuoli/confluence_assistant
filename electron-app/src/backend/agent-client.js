@@ -132,9 +132,10 @@ class AgentClient {
      * @returns {Promise<string>} - Agent's response
      */
     async callNodeAgent(message) {
-        const { spawn } = require('child_process');
+        const { spawn, execSync } = require('child_process');
         const path = require('path');
         const { app } = require('electron');
+        const fs = require('fs');
 
         return new Promise((resolve, reject) => {
             // Determine correct paths for packaged vs dev mode
@@ -148,6 +149,32 @@ class AgentClient {
             }
             const cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
 
+            // Find Node.js executable (same logic as main.js)
+            let nodePath = 'node';
+
+            // Try common macOS locations
+            const commonPaths = [
+                '/usr/local/bin/node',
+                '/opt/homebrew/bin/node',
+                '/usr/bin/node'
+            ];
+
+            for (const p of commonPaths) {
+                if (fs.existsSync(p)) {
+                    nodePath = p;
+                    break;
+                }
+            }
+
+            // Try 'which' as fallback
+            if (nodePath === 'node') {
+                try {
+                    nodePath = execSync('which node', { encoding: 'utf8' }).trim();
+                } catch (e) {
+                    // Use 'node' and hope for the best
+                }
+            }
+
             // Command: node dist/cli/index.js chat --message "user message"
             const args = [
                 cliPath,
@@ -156,9 +183,9 @@ class AgentClient {
                 message
             ];
 
-            console.log('Calling TypeScript agent:', 'node', args.join(' '));
+            console.log('Calling TypeScript agent:', nodePath, args.join(' '));
 
-            const process = spawn('node', args, {
+            const process = spawn(nodePath, args, {
                 cwd: projectRoot,
                 env: {
                     ...process.env,

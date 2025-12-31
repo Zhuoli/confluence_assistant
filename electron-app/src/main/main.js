@@ -10,6 +10,63 @@ let agentClient;
 let configManager;
 let logStream;
 
+// Find Node.js executable in common macOS locations
+function findNodeExecutable() {
+    const { execSync } = require('child_process');
+    const fs = require('fs');
+
+    // Common Node.js locations on macOS
+    const commonPaths = [
+        '/usr/local/bin/node',           // Homebrew Intel
+        '/opt/homebrew/bin/node',        // Homebrew Apple Silicon
+        '/usr/bin/node',                 // System node (rare on macOS)
+        process.env.HOME + '/.nvm/versions/node/*/bin/node',  // NVM
+        '/Users/' + process.env.USER + '/.nvm/versions/node/*/bin/node'
+    ];
+
+    // Try to use 'which' command first (works if we have any PATH)
+    try {
+        const whichResult = execSync('which node', { encoding: 'utf8' }).trim();
+        if (whichResult && fs.existsSync(whichResult)) {
+            console.log('Found node via which:', whichResult);
+            return whichResult;
+        }
+    } catch (e) {
+        console.log('which node failed, trying common paths...');
+    }
+
+    // Check common paths
+    for (const nodePath of commonPaths) {
+        if (nodePath.includes('*')) {
+            // Handle glob patterns for NVM
+            const baseDir = nodePath.split('*')[0];
+            try {
+                if (fs.existsSync(baseDir)) {
+                    const glob = require('glob');
+                    const matches = glob.sync(nodePath);
+                    if (matches.length > 0) {
+                        // Use the latest version
+                        const latest = matches.sort().reverse()[0];
+                        console.log('Found node via glob:', latest);
+                        return latest;
+                    }
+                }
+            } catch (e) {
+                // glob might not be available, skip
+            }
+        } else {
+            if (fs.existsSync(nodePath)) {
+                console.log('Found node at:', nodePath);
+                return nodePath;
+            }
+        }
+    }
+
+    // Last resort: try 'node' and hope it's in PATH
+    console.log('WARNING: Could not find node in common locations, trying "node" (may fail)');
+    return 'node';
+}
+
 // Set up production logging
 function setupLogging() {
     const logDir = path.join(app.getPath('userData'), 'logs');
@@ -234,13 +291,16 @@ ipcMain.on('test-connection', async (event, settings) => {
             'Hello, this is a connection test.'
         ];
 
-        // Use Node.js from the system
-        // On macOS, 'node' should be in PATH
+        // Find Node.js executable
+        // In packaged apps, PATH is minimal, so we need to find node explicitly
+        const nodePath = findNodeExecutable();
+
         console.log('Spawning Node.js process...');
-        console.log('  Command: node', args.join(' '));
+        console.log('  Node path:', nodePath);
+        console.log('  Command:', nodePath, args.join(' '));
         console.log('  Working directory:', projectRoot);
 
-        const testProcess = spawn('node', args, {
+        const testProcess = spawn(nodePath, args, {
             cwd: projectRoot,
             env: env,
             timeout: 30000 // 30 second timeout
