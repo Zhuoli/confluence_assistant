@@ -245,7 +245,7 @@ function loadSettings() {
     ipcRenderer.once('settings-loaded', (event, settings) => {
         if (settings) {
             // Model provider settings
-            document.getElementById('modelProvider').value = settings.MODEL_PROVIDER || 'claude';
+            document.getElementById('modelProvider').value = settings.MODEL_PROVIDER || 'oci-openai';
             document.getElementById('modelName').value = settings.MODEL_NAME || '';
             document.getElementById('anthropicKey').value = settings.ANTHROPIC_API_KEY || '';
             document.getElementById('openaiKey').value = settings.OPENAI_API_KEY || '';

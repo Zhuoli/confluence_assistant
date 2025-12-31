@@ -246,7 +246,7 @@ ipcMain.on('test-connection', async (event, settings) => {
         }
 
         // For testing, we'll try to create the provider and send a simple message
-        const provider = settings.MODEL_PROVIDER || 'claude';
+        const provider = settings.MODEL_PROVIDER || 'oci-openai';
 
         // Build environment variables
         const env = {

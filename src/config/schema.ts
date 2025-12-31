@@ -8,7 +8,7 @@ export const ConfigSchema = z
     // Model Provider Configuration
     modelProvider: z
       .enum(['claude', 'openai', 'oci-openai'])
-      .default('claude')
+      .default('oci-openai')
       .describe('AI model provider (claude, openai, or oci-openai)'),
 
     modelName: z

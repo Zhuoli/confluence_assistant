@@ -32,7 +32,7 @@ export class OCIOpenAIProvider extends BaseProvider {
     this.endpoint = config.ociEndpoint;
 
     // Use custom model name if provided, otherwise use default
-    this.model = config.modelName || 'cohere.command-r-plus';
+    this.model = config.modelName || 'oca/gpt5';
 
     // Set up OCI authentication
     const authProvider = this.createAuthProvider(config);

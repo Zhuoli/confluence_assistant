@@ -26,7 +26,7 @@ try {
 class AgentClient {
     constructor(config) {
         // Validate API key based on provider
-        const provider = config.MODEL_PROVIDER || 'claude';
+        const provider = config.MODEL_PROVIDER || 'oci-openai';
         if (provider === 'claude' && !config.ANTHROPIC_API_KEY) {
             throw new Error('Anthropic API key is required for Claude provider');
         }
@@ -64,7 +64,7 @@ class AgentClient {
 
             // Create config object in the format expected by TypeScript agent
             const agentConfig = {
-                modelProvider: this.config.MODEL_PROVIDER || 'claude',
+                modelProvider: this.config.MODEL_PROVIDER || 'oci-openai',
                 modelName: this.config.MODEL_NAME || undefined,
                 anthropicApiKey: this.config.ANTHROPIC_API_KEY || '',
                 openaiApiKey: this.config.OPENAI_API_KEY || '',
@@ -190,7 +190,7 @@ class AgentClient {
                 env: {
                     ...process.env,
                     // Pass through configuration from Electron's .env
-                    MODEL_PROVIDER: this.config.MODEL_PROVIDER || 'claude',
+                    MODEL_PROVIDER: this.config.MODEL_PROVIDER || 'oci-openai',
                     MODEL_NAME: this.config.MODEL_NAME || '',
                     ANTHROPIC_API_KEY: this.config.ANTHROPIC_API_KEY || '',
                     OPENAI_API_KEY: this.config.OPENAI_API_KEY || '',

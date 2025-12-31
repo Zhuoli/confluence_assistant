@@ -63,7 +63,7 @@ class ConfigManager {
     }
 
     isConfigured() {
-        const provider = this.config.MODEL_PROVIDER || 'claude';
+        const provider = this.config.MODEL_PROVIDER || 'oci-openai';
 
         // Check common requirements
         const hasJira = !!(
