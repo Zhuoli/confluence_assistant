@@ -6,7 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --dev",
-    "prebuild": "rm -rf backend-dist && cp -r ../dist backend-dist && cp -r ../.claude .claude-skills",
+    "prebuild": "rm -rf backend-dist && cp -r ../dist backend-dist && cp ../backend-package.json backend-dist/package.json && cp -r ../.claude .claude-skills",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
     "build:win": "electron-builder --win",
@@ -48,6 +48,7 @@
       "package.json",
       "backend-dist/**/*.js",
       "backend-dist/**/*.js.map",
+      "backend-dist/package.json",
       ".claude-skills/**/*",
       {
         "from": "../node_modules",
