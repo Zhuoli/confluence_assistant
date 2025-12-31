@@ -256,6 +256,15 @@ git push origin v3.0.0
 # 4. GitHub Actions automatically builds ARM64 installer and creates release!
 ```
 
+**Opening the downloaded app on macOS:**
+
+If you get a security warning when opening the downloaded app, run:
+```bash
+xattr -c "/Applications/Atlassian AI Assistant.app"
+```
+
+Or right-click the app → "Open" → Click "Open" in the dialog.
+
 ---
 
 ## Configuration Reference
