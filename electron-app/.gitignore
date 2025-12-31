@@ -30,4 +30,4 @@ npm-debug.log*
 
 # Build artifacts
 backend-dist/
-.claude-skills/
+.claude/
