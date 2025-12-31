@@ -256,8 +256,6 @@ git push origin v3.0.0
 # 4. GitHub Actions automatically builds ARM64 installer and creates release!
 ```
 
-📖 **For detailed instructions**, see [BUILD_AND_DISTRIBUTION.md](BUILD_AND_DISTRIBUTION.md)
-
 ---
 
 ## Configuration Reference
