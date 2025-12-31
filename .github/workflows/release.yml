@@ -85,6 +85,20 @@ jobs:
       - name: Build TypeScript
         run: npm run build
 
+      - name: Prepare Electron app backend
+        run: cd electron-app && npm run prebuild
+
+      - name: Verify backend files exist
+        run: |
+          if [ ! -f "electron-app/backend-dist/cli/index.js" ]; then
+            echo "ERROR: backend-dist/cli/index.js not found!"
+            echo "Contents of electron-app/backend-dist:"
+            ls -la electron-app/backend-dist/ || echo "backend-dist directory does not exist"
+            exit 1
+          fi
+          echo "✓ Backend files verified"
+          ls -lh electron-app/backend-dist/cli/
+
       - name: Build macOS ARM64 app
         run: cd electron-app && npm run build:mac
         env:
