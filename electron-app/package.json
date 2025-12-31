@@ -102,11 +102,6 @@
       ],
       "category": "Office"
     },
-    "asar": true,
-    "asarUnpack": [
-      "backend-dist/**/*",
-      "node_modules/oci-common/**/*",
-      "node_modules/oci-generativeaiinference/**/*"
-    ]
+    "asar": false
   }
 }

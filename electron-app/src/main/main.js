@@ -159,12 +159,11 @@ ipcMain.on('test-connection', async (event, settings) => {
         console.log('  process.resourcesPath:', process.resourcesPath);
 
         if (app.isPackaged) {
-            // Packaged mode
-            // Files are in .asar.unpacked next to the .asar file
-            const resourcesPath = process.resourcesPath;
-            projectRoot = path.join(resourcesPath, 'app.asar.unpacked');
+            // Packaged mode (no ASAR)
+            // Files are directly in app.getAppPath()
+            projectRoot = app.getAppPath();
             cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
-            console.log('  Mode: Packaged (using .asar.unpacked)');
+            console.log('  Mode: Packaged (no ASAR)');
         } else {
             // Dev mode
             projectRoot = path.join(__dirname, '..', '..');

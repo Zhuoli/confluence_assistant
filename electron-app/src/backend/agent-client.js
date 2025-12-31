@@ -134,9 +134,18 @@ class AgentClient {
     async callNodeAgent(message) {
         const { spawn } = require('child_process');
         const path = require('path');
+        const { app } = require('electron');
 
         return new Promise((resolve, reject) => {
-            const projectRoot = path.join(__dirname, '..', '..');
+            // Determine correct paths for packaged vs dev mode
+            let projectRoot;
+            if (app.isPackaged) {
+                // Packaged mode (no ASAR)
+                projectRoot = app.getAppPath();
+            } else {
+                // Dev mode
+                projectRoot = path.join(__dirname, '..', '..');
+            }
             const cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
 
             // Command: node dist/cli/index.js chat --message "user message"
