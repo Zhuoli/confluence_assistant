@@ -52,7 +52,12 @@
       ".claude-skills/**/*",
       {
         "from": "../node_modules",
-        "to": "node_modules"
+        "to": "node_modules",
+        "filter": [
+          "**/*",
+          "!dotenv/**/*",
+          "!marked/**/*"
+        ]
       }
     ],
     "mac": {
