@@ -14,6 +14,13 @@ const statusText = document.getElementById('statusText');
 let isProcessing = false;
 let mermaidCounter = 0;
 
+// Escape HTML for safe rendering
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Initialize Mermaid for diagrams
 function initializeMermaid() {
     if (typeof mermaid !== 'undefined') {
@@ -29,22 +36,35 @@ function initializeMermaid() {
 // Configure Marked with highlight.js for syntax highlighting
 function configureMarked() {
     if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
-        marked.setOptions({
-            highlight: function(code, lang) {
-                if (lang && hljs.getLanguage(lang)) {
+        // Create custom renderer for code blocks with syntax highlighting
+        const renderer = {
+            code(code, language) {
+                const validLanguage = language && hljs.getLanguage(language) ? language : null;
+                let highlighted;
+
+                if (validLanguage) {
                     try {
-                        return hljs.highlight(code, { language: lang }).value;
+                        highlighted = hljs.highlight(code, { language: validLanguage }).value;
                     } catch (e) {
                         console.error('Highlight error:', e);
+                        highlighted = escapeHtml(code);
+                    }
+                } else {
+                    // Auto-detect or plain text
+                    try {
+                        highlighted = hljs.highlightAuto(code).value;
+                    } catch (e) {
+                        highlighted = escapeHtml(code);
                     }
                 }
-                // Auto-detect language if not specified
-                try {
-                    return hljs.highlightAuto(code).value;
-                } catch (e) {
-                    return code;
-                }
-            },
+
+                const langClass = validLanguage ? ` class="language-${validLanguage}"` : '';
+                return `<pre><code${langClass}>${highlighted}</code></pre>`;
+            }
+        };
+
+        marked.use({
+            renderer,
             breaks: true,
             gfm: true
         });
@@ -219,13 +239,6 @@ function basicFormatMessage(text) {
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/`(.*?)`/g, '<code>$1</code>')
         .replace(/\n/g, '<br>');
-}
-
-// Escape HTML for safe rendering
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 // Render mermaid diagrams after adding to DOM
