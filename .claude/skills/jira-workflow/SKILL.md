@@ -1,6 +1,7 @@
-# Jira Workflow Best Practices
-
-This skill provides knowledge about effective Jira workflows and best practices for managing work items.
+---
+name: jira-Workflow-Best-Practices
+description: This skill provides knowledge about effective Jira workflows and best practices for managing work items.
+---
 
 ## Skill Overview
 

@@ -519,30 +519,17 @@ ipcMain.on('list-skills', async (event) => {
 
                 // Parse frontmatter
                 const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-                let name = dir.name;
                 let description = '';
-                let repoPath = '';
 
                 if (frontmatterMatch) {
                     const frontmatter = frontmatterMatch[1];
-                    const nameMatch = frontmatter.match(/name:\s*(.+)/);
                     const descMatch = frontmatter.match(/description:\s*(.+)/);
-
-                    if (nameMatch) name = nameMatch[1].trim();
                     if (descMatch) description = descMatch[1].trim();
-                }
-
-                // Try to extract path from content
-                const pathMatch = content.match(/Repository Location:\s*`([^`]+)`/);
-                if (pathMatch) {
-                    repoPath = pathMatch[1];
                 }
 
                 skills.push({
                     name: dir.name,
-                    displayName: name,
-                    description: description,
-                    path: repoPath
+                    description: description
                 });
             } catch (error) {
                 console.warn(`Failed to read skill ${dir.name}:`, error.message);
@@ -564,33 +551,11 @@ ipcMain.on('get-skill', async (event, skillName) => {
         const skillPath = path.join(__dirname, '../../../.claude/skills', skillName, 'SKILL.md');
         const content = await fs.readFile(skillPath, 'utf8');
 
-        // Parse frontmatter and content
-        const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)/);
-        const skill = { name: skillName };
-
-        if (frontmatterMatch) {
-            const frontmatter = frontmatterMatch[1];
-            const body = frontmatterMatch[2];
-
-            const nameMatch = frontmatter.match(/name:\s*(.+)/);
-            const descMatch = frontmatter.match(/description:\s*(.+)/);
-
-            if (nameMatch) skill.name = nameMatch[1].trim();
-            if (descMatch) skill.description = descMatch[1].trim();
-
-            // Parse body sections
-            const pathMatch = body.match(/Repository Location:\s*`([^`]+)`/);
-            const archMatch = body.match(/## Architecture\n([\s\S]*?)(?=\n##|\n$)/);
-            const techMatch = body.match(/Technologies:\s*(.+)/);
-            const setupMatch = body.match(/## Development Setup\n([\s\S]*?)(?=\n##|\n$)/);
-            const notesMatch = body.match(/## Special Notes\n([\s\S]*?)(?=\n##|\n$)/);
-
-            if (pathMatch) skill.path = pathMatch[1];
-            if (archMatch) skill.architecture = archMatch[1].trim();
-            if (techMatch) skill.technologies = techMatch[1].trim();
-            if (setupMatch) skill.devSetup = setupMatch[1].trim();
-            if (notesMatch) skill.notes = notesMatch[1].trim();
-        }
+        // Return the full content as-is
+        const skill = {
+            name: skillName,
+            fullContent: content
+        };
 
         event.reply('skill-loaded', skill);
     } catch (error) {
@@ -610,42 +575,8 @@ ipcMain.on('save-skill', async (event, skillData) => {
         // Create directory if it doesn't exist
         await fs.mkdir(skillDir, { recursive: true });
 
-        // Build skill markdown content
-        const frontmatter = `---
-name: ${skillData.description}
-description: ${skillData.description}
----
-`;
-
-        const basicInfo = `# ${skillData.description}
-
-Repository Location: \`${skillData.path}\`
-`;
-
-        let architecture = '';
-        if (skillData.architecture) {
-            architecture = `\n## Architecture\n\n${skillData.architecture}\n`;
-        }
-
-        let technologies = '';
-        if (skillData.technologies) {
-            technologies = `\n## Key Technologies\n\nTechnologies: ${skillData.technologies}\n`;
-        }
-
-        let devSetup = '';
-        if (skillData.devSetup) {
-            devSetup = `\n## Development Setup\n\n${skillData.devSetup}\n`;
-        }
-
-        let notes = '';
-        if (skillData.notes) {
-            notes = `\n## Special Notes\n\n${skillData.notes}\n`;
-        }
-
-        const content = frontmatter + basicInfo + architecture + technologies + devSetup + notes;
-
-        // Write the file
-        await fs.writeFile(skillPath, content, 'utf8');
+        // Write the content directly (validation already done in frontend)
+        await fs.writeFile(skillPath, skillData.content, 'utf8');
 
         console.log(`Skill saved: ${skillData.name}`);
         event.reply('skill-saved', { success: true });
@@ -764,6 +695,77 @@ ipcMain.on('delete-custom-mcp-server', async (event, serverId) => {
     } catch (error) {
         console.error('Failed to delete custom MCP server:', error);
         event.reply('custom-mcp-server-deleted', false);
+    }
+});
+
+// Code Repositories Management IPC Handlers
+ipcMain.on('get-code-repos', async (event) => {
+    try {
+        const codeReposPath = path.join(app.getPath('userData'), 'code-repos.json');
+
+        if (fs.existsSync(codeReposPath)) {
+            const data = fs.readFileSync(codeReposPath, 'utf8');
+            const repos = JSON.parse(data);
+            event.reply('code-repos-loaded', repos);
+        } else {
+            event.reply('code-repos-loaded', []);
+        }
+    } catch (error) {
+        console.error('Failed to load code repositories:', error);
+        event.reply('code-repos-loaded', []);
+    }
+});
+
+ipcMain.on('save-code-repo', async (event, repo) => {
+    try {
+        const codeReposPath = path.join(app.getPath('userData'), 'code-repos.json');
+
+        // Load existing repos
+        let repos = [];
+        if (fs.existsSync(codeReposPath)) {
+            const data = fs.readFileSync(codeReposPath, 'utf8');
+            repos = JSON.parse(data);
+        }
+
+        // Find and update existing repo or add new one
+        const existingIndex = repos.findIndex(r => r.id === repo.id);
+        if (existingIndex >= 0) {
+            repos[existingIndex] = repo;
+        } else {
+            repos.push(repo);
+        }
+
+        // Save to file
+        fs.writeFileSync(codeReposPath, JSON.stringify(repos, null, 2));
+
+        event.reply('code-repo-saved', true);
+    } catch (error) {
+        console.error('Failed to save code repository:', error);
+        event.reply('code-repo-saved', false);
+    }
+});
+
+ipcMain.on('delete-code-repo', async (event, repoId) => {
+    try {
+        const codeReposPath = path.join(app.getPath('userData'), 'code-repos.json');
+
+        // Load existing repos
+        let repos = [];
+        if (fs.existsSync(codeReposPath)) {
+            const data = fs.readFileSync(codeReposPath, 'utf8');
+            repos = JSON.parse(data);
+        }
+
+        // Filter out the repo to delete
+        repos = repos.filter(r => r.id !== repoId);
+
+        // Save to file
+        fs.writeFileSync(codeReposPath, JSON.stringify(repos, null, 2));
+
+        event.reply('code-repo-deleted', true);
+    } catch (error) {
+        console.error('Failed to delete code repository:', error);
+        event.reply('code-repo-deleted', false);
     }
 });
 

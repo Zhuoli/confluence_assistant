@@ -313,17 +313,7 @@ function saveOciMcpSettings() {
     saveSettings();
 }
 
-// Code Repository MCP / Skills Management
-function openCodeRepoSettings() {
-    showSettingsView('codeRepoView');
-    loadSkills();
-}
-
-function backToCodeRepoSettings() {
-    showSettingsView('codeRepoView');
-    loadSkills();
-}
-
+// Skills Management
 function loadSkills() {
     const skillsList = document.getElementById('skillsList');
     skillsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: #6b7280;"><p>Loading skills...</p></div>';
@@ -337,8 +327,8 @@ ipcRenderer.on('skills-loaded', (event, skills) => {
     if (!skills || skills.length === 0) {
         skillsList.innerHTML = `
             <div style="text-align: center; padding: 2rem; color: #6b7280;">
-                <p>No repository skills configured yet.</p>
-                <p style="font-size: 13px; margin-top: 8px;">Click "+ Add Repository" to create your first skill.</p>
+                <p>No skills configured yet.</p>
+                <p style="font-size: 13px; margin-top: 8px;">Click "+ Add Skill" to create your first skill.</p>
             </div>
         `;
         return;
@@ -349,7 +339,6 @@ ipcRenderer.on('skills-loaded', (event, skills) => {
             <div class="skill-info">
                 <div class="skill-name">${skill.name}</div>
                 <div class="skill-description">${skill.description}</div>
-                ${skill.path ? `<div class="skill-path">${skill.path}</div>` : ''}
             </div>
             <div class="skill-actions">
                 <button class="btn-icon" onclick="editSkill('${skill.name}')">✏️ Edit</button>
@@ -361,33 +350,28 @@ ipcRenderer.on('skills-loaded', (event, skills) => {
 
 function addNewSkill() {
     // Clear the form
-    document.getElementById('editSkillTitle').textContent = '📝 Add Repository Skill';
+    document.getElementById('editSkillTitle').textContent = '📝 Add Skill';
     document.getElementById('skillName').value = '';
-    document.getElementById('skillName').disabled = false;
-    document.getElementById('skillDescription').value = '';
-    document.getElementById('skillRepoPath').value = '';
-    document.getElementById('skillArchitecture').value = '';
-    document.getElementById('skillTechnologies').value = '';
-    document.getElementById('skillDevSetup').value = '';
-    document.getElementById('skillNotes').value = '';
+    document.getElementById('skillContent').value = '';
+
+    // Show skill name section for new skills
+    document.getElementById('skillNameSection').style.display = 'block';
 
     showSettingsView('editSkillView');
 }
 
 function editSkill(skillName) {
-    document.getElementById('editSkillTitle').textContent = '📝 Edit Repository Skill';
+    document.getElementById('editSkillTitle').textContent = `📝 Edit Skill: ${skillName}`;
+
+    // Hide skill name section when editing (can't rename)
+    document.getElementById('skillNameSection').style.display = 'none';
+    document.getElementById('skillName').value = skillName;
 
     ipcRenderer.send('get-skill', skillName);
     ipcRenderer.once('skill-loaded', (event, skill) => {
         if (skill) {
-            document.getElementById('skillName').value = skill.name;
-            document.getElementById('skillName').disabled = true; // Don't allow renaming
-            document.getElementById('skillDescription').value = skill.description || '';
-            document.getElementById('skillRepoPath').value = skill.path || '';
-            document.getElementById('skillArchitecture').value = skill.architecture || '';
-            document.getElementById('skillTechnologies').value = skill.technologies || '';
-            document.getElementById('skillDevSetup').value = skill.devSetup || '';
-            document.getElementById('skillNotes').value = skill.notes || '';
+            // Load the full content (frontmatter + body)
+            document.getElementById('skillContent').value = skill.fullContent || '';
 
             showSettingsView('editSkillView');
         }
@@ -409,55 +393,196 @@ function deleteSkill(skillName) {
 }
 
 function saveSkill() {
-    const skillData = {
-        name: document.getElementById('skillName').value.trim(),
-        description: document.getElementById('skillDescription').value.trim(),
-        path: document.getElementById('skillRepoPath').value.trim(),
-        architecture: document.getElementById('skillArchitecture').value.trim(),
-        technologies: document.getElementById('skillTechnologies').value.trim(),
-        devSetup: document.getElementById('skillDevSetup').value.trim(),
-        notes: document.getElementById('skillNotes').value.trim()
-    };
+    const skillName = document.getElementById('skillName').value.trim();
+    const skillContent = document.getElementById('skillContent').value.trim();
 
-    // Validation
-    if (!skillData.name) {
+    // Validation 1: Check skill name
+    if (!skillName) {
         alert('Please provide a skill name');
         return;
     }
 
-    if (!skillData.description) {
-        alert('Please provide a description');
-        return;
-    }
-
-    if (!skillData.path) {
-        alert('Please provide a repository path');
-        return;
-    }
-
     // Validate skill name format (lowercase, hyphens only)
-    if (!/^[a-z0-9-]+$/.test(skillData.name)) {
+    if (!/^[a-z0-9-]+$/.test(skillName)) {
         alert('Skill name must be lowercase and contain only letters, numbers, and hyphens');
         return;
     }
+
+    // Validation 2: Check skill content exists
+    if (!skillContent) {
+        alert('Please provide skill content');
+        return;
+    }
+
+    // Validation 3: Check frontmatter format
+    const frontmatterRegex = /^---\n([\s\S]*?)\n---/;
+    const frontmatterMatch = skillContent.match(frontmatterRegex);
+
+    if (!frontmatterMatch) {
+        alert('❌ Invalid skill format!\n\nSkills must start with frontmatter:\n\n---\ndescription: Your description here\n---\n\nYour content...');
+        return;
+    }
+
+    // Validation 4: Check for description in frontmatter
+    const frontmatter = frontmatterMatch[1];
+    const descriptionMatch = frontmatter.match(/description:\s*(.+)/);
+
+    if (!descriptionMatch) {
+        alert('❌ Invalid skill format!\n\nFrontmatter must include a "description:" field:\n\n---\ndescription: Your description here\n---');
+        return;
+    }
+
+    const description = descriptionMatch[1].trim();
+    if (!description) {
+        alert('❌ Description cannot be empty!\n\nPlease provide a meaningful description in the frontmatter.');
+        return;
+    }
+
+    // Validation 5: Check there's content after frontmatter
+    const contentAfterFrontmatter = skillContent.substring(frontmatterMatch[0].length).trim();
+    if (!contentAfterFrontmatter) {
+        alert('❌ Skill content is empty!\n\nPlease add content after the frontmatter.');
+        return;
+    }
+
+    // All validations passed, save the skill
+    const skillData = {
+        name: skillName,
+        content: skillContent
+    };
 
     ipcRenderer.send('save-skill', skillData);
 
     ipcRenderer.once('skill-saved', (event, result) => {
         if (result.success) {
-            backToCodeRepoSettings();
+            backToMainSettings();
+            loadSkills(); // Reload skills list
         } else {
             alert(`Failed to save skill: ${result.error}`);
         }
     });
 }
 
-function browseForDirectory() {
-    ipcRenderer.send('browse-directory');
+// ========================================
+// Code Repositories Management
+// ========================================
 
-    ipcRenderer.once('directory-selected', (event, directoryPath) => {
-        if (directoryPath) {
-            document.getElementById('skillRepoPath').value = directoryPath;
+let codeRepositories = [];
+let currentEditingRepoId = null;
+
+function loadCodeRepos() {
+    ipcRenderer.send('get-code-repos');
+}
+
+ipcRenderer.on('code-repos-loaded', (event, repos) => {
+    codeRepositories = repos || [];
+    renderCodeRepos();
+});
+
+function renderCodeRepos() {
+    const container = document.getElementById('codeReposList');
+    if (!container) return;
+
+    if (codeRepositories.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                <p>No code repositories added yet.</p>
+                <p style="font-size: 13px; margin-top: 8px;">Click "+ Add Repository" to add your first repository.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const html = codeRepositories.map(repo => `
+        <div class="skill-card">
+            <div class="skill-info">
+                <div class="skill-name" style="font-family: monospace; font-size: 14px;">📂 ${repo.path}</div>
+                ${repo.description ? `<div class="skill-description">${repo.description}</div>` : ''}
+            </div>
+            <div class="skill-actions">
+                <button class="btn-icon" onclick="editCodeRepo('${repo.id}')">✏️ Edit</button>
+                <button class="btn-icon danger" onclick="deleteCodeRepo('${repo.id}')">🗑️ Delete</button>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+function addNewCodeRepo() {
+    currentEditingRepoId = null;
+    document.getElementById('codeRepoTitle').textContent = '📂 Add Repository';
+    document.getElementById('repoPath').value = '';
+    document.getElementById('repoDescription').value = '';
+
+    showSettingsView('codeRepoView');
+}
+
+function editCodeRepo(repoId) {
+    const repo = codeRepositories.find(r => r.id === repoId);
+    if (!repo) {
+        alert('Repository not found');
+        return;
+    }
+
+    currentEditingRepoId = repoId;
+    document.getElementById('codeRepoTitle').textContent = '📂 Edit Repository';
+    document.getElementById('repoPath').value = repo.path || '';
+    document.getElementById('repoDescription').value = repo.description || '';
+
+    showSettingsView('codeRepoView');
+}
+
+function saveCodeRepo() {
+    const path = document.getElementById('repoPath').value.trim();
+    const description = document.getElementById('repoDescription').value.trim();
+
+    // Validation
+    if (!path) {
+        alert('Please provide a repository path');
+        return;
+    }
+
+    const repo = {
+        id: currentEditingRepoId || Date.now().toString(),
+        path: path,
+        description: description || ''
+    };
+
+    ipcRenderer.send('save-code-repo', repo);
+    ipcRenderer.once('code-repo-saved', (event, success) => {
+        if (success) {
+            loadCodeRepos();
+            backToMainSettings();
+        } else {
+            alert('Failed to save repository');
+        }
+    });
+}
+
+function deleteCodeRepo(repoId) {
+    const repo = codeRepositories.find(r => r.id === repoId);
+    if (!repo) return;
+
+    if (!confirm(`Are you sure you want to remove this repository?\n\n${repo.path}`)) {
+        return;
+    }
+
+    ipcRenderer.send('delete-code-repo', repoId);
+    ipcRenderer.once('code-repo-deleted', (event, success) => {
+        if (success) {
+            loadCodeRepos();
+        } else {
+            alert('Failed to delete repository');
+        }
+    });
+}
+
+function browseRepoDirectory() {
+    ipcRenderer.send('browse-directory');
+    ipcRenderer.once('directory-selected', (event, path) => {
+        if (path) {
+            document.getElementById('repoPath').value = path;
         }
     });
 }
@@ -863,13 +988,15 @@ function browseCustomMcpCwd() {
     });
 }
 
-// Load custom MCP servers when settings modal opens
+// Load custom MCP servers, skills, and code repos when settings modal opens
 const originalOpenSettings = openSettings;
 window.openSettings = function() {
     if (originalOpenSettings) {
         originalOpenSettings();
     }
     loadCustomMcpServers();
+    loadSkills();
+    loadCodeRepos();
 };
 
 // Close modal when clicking outside

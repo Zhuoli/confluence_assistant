@@ -1,6 +1,8 @@
-# Confluence Documentation Workflow
+---
+name: Confluence-Documentation-Workflow
+description: This skill provides knowledge about effective Confluence documentation practices and patterns.
+---
 
-This skill provides knowledge about effective Confluence documentation practices and patterns.
 
 ## Skill Overview
 

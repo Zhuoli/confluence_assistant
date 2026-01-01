@@ -520,6 +520,23 @@ body {
     color: white;
 }
 
+.btn-browse {
+    padding: 10px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.btn-browse:hover {
+    background-color: var(--border-color);
+}
+
 .test-result {
     margin-top: 10px;
     padding: 10px;
