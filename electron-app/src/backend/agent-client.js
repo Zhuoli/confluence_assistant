@@ -105,6 +105,22 @@ class AgentClient {
             }
             const cliPath = path.join(projectRoot, 'backend-dist', 'cli', 'index.js');
 
+            // Load code repositories from config
+            const codeReposPath = path.join(app.getPath('userData'), 'code-repos.json');
+            let codeRepoPaths = '';
+
+            try {
+                if (fs.existsSync(codeReposPath)) {
+                    const data = fs.readFileSync(codeReposPath, 'utf8');
+                    const repos = JSON.parse(data);
+                    // Join paths with ':' separator for environment variable
+                    codeRepoPaths = repos.map(repo => repo.path).join(':');
+                    console.log('Loaded code repositories:', codeRepoPaths);
+                }
+            } catch (error) {
+                console.error('Error loading code repositories:', error);
+            }
+
             // Find Node.js executable (same logic as main.js)
             let nodePath = 'node';
 
@@ -169,7 +185,9 @@ class AgentClient {
                     OCI_MCP_COMPARTMENT_ID: this.config.OCI_MCP_COMPARTMENT_ID || '',
                     OCI_MCP_TENANCY_ID: this.config.OCI_MCP_TENANCY_ID || '',
                     OCI_MCP_CONFIG_PATH: this.config.OCI_MCP_CONFIG_PATH || '',
-                    OCI_MCP_PROFILE: this.config.OCI_MCP_PROFILE || ''
+                    OCI_MCP_PROFILE: this.config.OCI_MCP_PROFILE || '',
+                    // Code repository paths
+                    CODE_REPO_PATHS: codeRepoPaths
                 }
             });
 

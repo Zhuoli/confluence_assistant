@@ -5,6 +5,7 @@ export default defineConfig({
     'cli/index': 'src/cli/index.ts',
     'mcp/atlassian-server': 'src/mcp/atlassian-server.ts',
     'mcp/oci-server': 'src/mcp/oci-server.ts',
+    'mcp/filesystem-server': 'src/mcp/filesystem-server.ts',
   },
   format: ['esm'],
   dts: true,

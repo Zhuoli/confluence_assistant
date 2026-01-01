@@ -10,6 +10,8 @@ import type { Message, ChatOptions } from './types.js';
 export class ClaudeProvider extends BaseProvider {
   private client: Anthropic;
   private model: string;
+  private tools: Anthropic.Tool[] = [];
+  private toolHandler?: (toolName: string, toolInput: any) => Promise<any>;
 
   constructor(config: Config, systemPrompt?: string) {
     super(config, systemPrompt);
@@ -29,28 +31,109 @@ export class ClaudeProvider extends BaseProvider {
   }
 
   /**
-   * Send a message to Claude and get a response
+   * Register tools that the AI can use
+   */
+  registerTools(tools: Anthropic.Tool[], handler: (toolName: string, toolInput: any) => Promise<any>): void {
+    this.tools = tools;
+    this.toolHandler = handler;
+    console.error(`Registered ${tools.length} tools`);
+  }
+
+  /**
+   * Send a message to Claude and get a response (with tool calling support)
    */
   async chat(messages: Message[], options?: ChatOptions): Promise<string> {
     try {
-      const response = await this.client.messages.create({
-        model: this.model,
-        max_tokens: options?.maxTokens || 4096,
-        temperature: options?.temperature,
-        system: this.systemPrompt,
-        messages: messages.map((msg) => ({
-          role: msg.role === 'system' ? 'user' : msg.role,
-          content: msg.content,
-        })),
-      });
+      const conversationMessages: Anthropic.MessageParam[] = messages.map((msg) => ({
+        role: msg.role === 'system' ? 'user' : msg.role,
+        content: msg.content,
+      }));
 
-      // Extract text content from response
-      const textContent = response.content
-        .filter((block) => block.type === 'text')
-        .map((block) => ('text' in block ? block.text : ''))
-        .join('\n');
+      // Agentic loop: keep calling until we get a text response (no more tool calls)
+      let continueLoop = true;
+      const maxIterations = 10; // Prevent infinite loops
+      let iteration = 0;
 
-      return textContent;
+      while (continueLoop && iteration < maxIterations) {
+        iteration++;
+
+        const requestParams: Anthropic.MessageCreateParams = {
+          model: this.model,
+          max_tokens: options?.maxTokens || 4096,
+          temperature: options?.temperature,
+          system: this.systemPrompt,
+          messages: conversationMessages,
+        };
+
+        // Add tools if registered
+        if (this.tools.length > 0) {
+          requestParams.tools = this.tools;
+        }
+
+        const response = await this.client.messages.create(requestParams);
+
+        // Check if there are tool calls
+        const toolUseBlocks = response.content.filter(
+          (block) => block.type === 'tool_use'
+        );
+
+        if (toolUseBlocks.length > 0 && this.toolHandler) {
+          // Process tool calls
+          console.error(`Processing ${toolUseBlocks.length} tool calls...`);
+
+          // Add assistant's response to conversation
+          conversationMessages.push({
+            role: 'assistant',
+            content: response.content,
+          });
+
+          // Execute tools and collect results
+          const toolResults: Anthropic.ToolResultBlockParam[] = [];
+
+          for (const toolBlock of toolUseBlocks) {
+            if (toolBlock.type === 'tool_use') {
+              console.error(`Calling tool: ${toolBlock.name}`);
+
+              try {
+                const result = await this.toolHandler(toolBlock.name, toolBlock.input);
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolBlock.id,
+                  content: typeof result === 'string' ? result : JSON.stringify(result),
+                });
+              } catch (error) {
+                console.error(`Tool ${toolBlock.name} failed:`, error);
+                toolResults.push({
+                  type: 'tool_result',
+                  tool_use_id: toolBlock.id,
+                  content: `Error: ${error}`,
+                  is_error: true,
+                });
+              }
+            }
+          }
+
+          // Add tool results to conversation
+          conversationMessages.push({
+            role: 'user',
+            content: toolResults,
+          });
+
+          // Continue loop to get next response
+          continue;
+        }
+
+        // No tool calls, extract text response and end loop
+        const textContent = response.content
+          .filter((block) => block.type === 'text')
+          .map((block) => ('text' in block ? block.text : ''))
+          .join('\n');
+
+        return textContent;
+      }
+
+      // If we hit max iterations, return what we have
+      throw new Error('Max tool calling iterations reached');
     } catch (error) {
       console.error('Error calling Claude API:', error);
       throw new Error(`Claude API error: ${error}`);

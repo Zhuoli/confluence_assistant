@@ -32,7 +32,9 @@
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@modelcontextprotocol/server-filesystem": "^2025.12.18"
+  },
   "build": {
     "appId": "com.atlassian.ai.assistant",
     "productName": "Atlassian AI Assistant",
@@ -57,11 +59,15 @@
       "target": [
         {
           "target": "dmg",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         },
         {
           "target": "zip",
-          "arch": ["arm64"]
+          "arch": [
+            "arm64"
+          ]
         }
       ]
     },
