@@ -65,20 +65,13 @@ class ConfigManager {
     isConfigured() {
         const provider = this.config.MODEL_PROVIDER || 'oci-openai';
 
-        // Check common requirements
-        const hasJira = !!(
-            this.config.JIRA_URL &&
-            this.config.JIRA_USERNAME &&
-            this.config.JIRA_API_TOKEN
-        );
-
-        // Check provider-specific API key
+        // Check provider-specific API key (Jira/Confluence are optional MCP features)
         if (provider === 'claude') {
-            return hasJira && !!this.config.ANTHROPIC_API_KEY;
+            return !!this.config.ANTHROPIC_API_KEY;
         } else if (provider === 'openai') {
-            return hasJira && !!this.config.OPENAI_API_KEY;
+            return !!this.config.OPENAI_API_KEY;
         } else if (provider === 'oci-openai') {
-            return hasJira && !!(
+            return !!(
                 this.config.OCI_COMPARTMENT_ID &&
                 this.config.OCI_ENDPOINT
             );

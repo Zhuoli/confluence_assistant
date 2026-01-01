@@ -34,6 +34,9 @@ export function loadConfig(): Config {
     ociMcpConfigPath: process.env.OCI_MCP_CONFIG_PATH || undefined,
     ociMcpProfile: process.env.OCI_MCP_PROFILE || undefined,
 
+    // Atlassian MCP (for Jira/Confluence access)
+    atlassianMcpEnabled: process.env.ATLASSIAN_MCP_ENABLED === 'true',
+
     // Jira
     jiraUrl: process.env.JIRA_URL || '',
     jiraUsername: process.env.JIRA_USERNAME || '',

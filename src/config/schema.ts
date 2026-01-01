@@ -80,36 +80,42 @@ export const ConfigSchema = z
       .optional()
       .describe('OCI profile name for MCP (defaults to ociProfile or DEFAULT)'),
 
-    // Jira Configuration
+    // Atlassian MCP Configuration
+    atlassianMcpEnabled: z
+      .boolean()
+      .default(false)
+      .describe('Enable Atlassian MCP server for Jira/Confluence access'),
+
+    // Jira Configuration (optional - only required when Atlassian MCP enabled)
     jiraUrl: z
       .string()
-      .url()
+      .default('')
       .describe('Jira instance URL (e.g., https://jira.company.com)'),
 
     jiraUsername: z
       .string()
-      .min(1)
+      .default('')
       .describe('Jira username (usually email)'),
 
     jiraApiToken: z
       .string()
-      .min(1)
+      .default('')
       .describe('Jira API token (Personal Access Token)'),
 
-    // Confluence Configuration
+    // Confluence Configuration (optional - only required when Atlassian MCP enabled)
     confluenceUrl: z
       .string()
-      .url()
+      .default('')
       .describe('Confluence instance URL (e.g., https://confluence.company.com)'),
 
     confluenceUsername: z
       .string()
-      .min(1)
+      .default('')
       .describe('Confluence username (usually email)'),
 
     confluenceApiToken: z
       .string()
-      .min(1)
+      .default('')
       .describe('Confluence API token (Personal Access Token)'),
 
     confluenceSpaceKey: z
@@ -162,6 +168,31 @@ export const ConfigSchema = z
     {
       message: 'OCI MCP requires region, compartment ID, and tenancy ID when enabled',
       path: ['ociMcpRegion', 'ociMcpCompartmentId', 'ociMcpTenancyId'],
+    }
+  )
+  .refine(
+    (data) => {
+      // Validate Atlassian MCP (Jira/Confluence) configuration when enabled
+      if (data.atlassianMcpEnabled) {
+        // Validate Jira fields
+        const hasValidJira =
+          data.jiraUrl.length > 0 &&
+          data.jiraUsername.length > 0 &&
+          data.jiraApiToken.length > 0;
+
+        // Validate Confluence fields
+        const hasValidConfluence =
+          data.confluenceUrl.length > 0 &&
+          data.confluenceUsername.length > 0 &&
+          data.confluenceApiToken.length > 0;
+
+        return hasValidJira && hasValidConfluence;
+      }
+      return true;
+    },
+    {
+      message: 'Atlassian MCP requires valid Jira and Confluence credentials when enabled',
+      path: ['atlassianMcpEnabled'],
     }
   );
 
