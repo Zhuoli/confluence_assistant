@@ -53,11 +53,12 @@ class AgentClient {
      * Send a message to the TypeScript Agent SDK
      *
      * @param {string} message - User's message
+     * @param {Function} onProgress - Optional callback for streaming progress logs
      * @returns {Promise<string>} - Agent's response
      */
-    async sendMessage(message) {
+    async sendMessage(message, onProgress) {
         try {
-            const response = await this.callNodeAgent(message);
+            const response = await this.callNodeAgent(message, onProgress);
 
             // Track conversation history
             this.conversationHistory.push({
@@ -85,9 +86,10 @@ class AgentClient {
      * Call Node.js TypeScript agent via CLI
      *
      * @param {string} message - User's message
+     * @param {Function} onProgress - Optional callback for streaming progress logs
      * @returns {Promise<string>} - Agent's response
      */
-    async callNodeAgent(message) {
+    async callNodeAgent(message, onProgress) {
         const { spawn, execSync } = require('child_process');
         const path = require('path');
         const { app } = require('electron');
@@ -199,7 +201,39 @@ class AgentClient {
             });
 
             childProcess.stderr.on('data', (data) => {
-                stderr += data.toString();
+                const chunk = data.toString();
+                stderr += chunk;
+
+                // Stream logs to the UI in real-time
+                if (onProgress) {
+                    // Parse for structured log messages
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.trim()) {
+                            // Check if it's a JSON structured log
+                            if (line.includes('[AGENT_LOG]')) {
+                                try {
+                                    const jsonMatch = line.match(/\[AGENT_LOG\] (.+)/);
+                                    if (jsonMatch) {
+                                        const logData = JSON.parse(jsonMatch[1]);
+                                        onProgress({
+                                            type: 'structured_log',
+                                            data: logData
+                                        });
+                                    }
+                                } catch (e) {
+                                    // Not JSON, fallthrough to raw log
+                                }
+                            }
+
+                            // Also send raw log line for display
+                            onProgress({
+                                type: 'raw_log',
+                                message: line
+                            });
+                        }
+                    }
+                }
             });
 
             childProcess.on('close', (code) => {

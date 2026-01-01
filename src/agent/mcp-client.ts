@@ -9,6 +9,7 @@ import { spawn, ChildProcess } from 'child_process';
 import { resolve, join } from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Logger, LogCategory } from '../utils/logger.js';
 import type { CallToolResultSchema } from '@modelcontextprotocol/sdk/types.js';
 
 export interface MCPServerConfig {
@@ -96,12 +97,12 @@ export class MCPClientManager {
 
       // Connect to the server
       await client.connect(transport);
-      console.error(`✓ Connected to ${config.name} MCP server`);
 
       // List available tools
       const toolsResponse = await client.listTools();
       const tools = toolsResponse.tools as MCPTool[];
-      console.error(`✓ Discovered ${tools.length} tools from ${config.name}`);
+
+      Logger.mcpServerConnected(config.name, tools.length);
 
       // Store the server instance
       this.servers.set(config.name, {
@@ -132,16 +133,21 @@ export class MCPClientManager {
    * Call a tool on the appropriate MCP server
    */
   async callTool(toolName: string, args: Record<string, unknown>): Promise<any> {
+    const startTime = Date.now();
+
     // Find which server has this tool
     for (const server of this.servers.values()) {
       const tool = server.tools.find((t) => t.name === toolName);
       if (tool) {
-        console.error(`Calling ${toolName} on ${server.name} MCP server`);
+        Logger.toolCalling(toolName, args);
         try {
           const result = await server.client.callTool({
             name: toolName,
             arguments: args,
           });
+
+          const duration = Date.now() - startTime;
+          Logger.toolCallSuccess(toolName, duration);
 
           // Extract the actual content from the MCP response
           if (result && 'content' in result) {
@@ -158,7 +164,7 @@ export class MCPClientManager {
 
           return JSON.stringify(result);
         } catch (error) {
-          console.error(`Error calling ${toolName}:`, error);
+          Logger.toolCallFailed(toolName, String(error));
           throw error;
         }
       }

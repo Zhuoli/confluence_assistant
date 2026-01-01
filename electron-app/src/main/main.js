@@ -778,7 +778,12 @@ ipcMain.on('chat-message', async (event, data) => {
             throw new Error('Agent client not initialized. Please configure settings first.');
         }
 
-        const response = await agentClient.sendMessage(message);
+        // Create progress callback to stream logs to UI
+        const onProgress = (progressData) => {
+            event.reply('chat-progress', progressData);
+        };
+
+        const response = await agentClient.sendMessage(message, onProgress);
 
         event.reply('chat-response', { message: response });
     } catch (error) {

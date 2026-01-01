@@ -97,6 +97,7 @@ function setupEventListeners() {
     // Listen for responses from main process
     ipcRenderer.on('chat-response', (event, response) => {
         removeTypingIndicator();
+        removeProgressPanel();
         addMessage(response.message, 'assistant');
         isProcessing = false;
         sendButton.disabled = false;
@@ -104,9 +105,14 @@ function setupEventListeners() {
 
     ipcRenderer.on('chat-error', (event, error) => {
         removeTypingIndicator();
+        removeProgressPanel();
         addMessage('Sorry, I encountered an error: ' + error.message, 'assistant', true);
         isProcessing = false;
         sendButton.disabled = false;
+    });
+
+    ipcRenderer.on('chat-progress', (event, progressData) => {
+        updateProgressPanel(progressData);
     });
 
     ipcRenderer.on('config-status', (event, status) => {
@@ -290,6 +296,70 @@ function removeTypingIndicator() {
     if (indicator) {
         indicator.remove();
     }
+}
+
+function updateProgressPanel(progressData) {
+    let panel = document.getElementById('progressPanel');
+
+    // Create panel if it doesn't exist
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'progressPanel';
+        panel.className = 'progress-panel';
+        chatContainer.appendChild(panel);
+    }
+
+    // Handle structured log messages
+    if (progressData.type === 'structured_log') {
+        const logData = progressData.data;
+        const logLine = document.createElement('div');
+        logLine.className = `progress-log progress-log-${logData.level.toLowerCase()}`;
+
+        const emoji = getLogEmoji(logData.category, logData.level);
+        const categoryBadge = `<span class="log-category">[${logData.category}]</span>`;
+
+        logLine.innerHTML = `${emoji} ${categoryBadge} ${escapeHtml(logData.message)}`;
+        panel.appendChild(logLine);
+
+        // Keep only last 10 log lines
+        const logs = panel.querySelectorAll('.progress-log');
+        if (logs.length > 10) {
+            logs[0].remove();
+        }
+    }
+
+    // Scroll to show latest progress
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+}
+
+function removeProgressPanel() {
+    const panel = document.getElementById('progressPanel');
+    if (panel) {
+        panel.remove();
+    }
+}
+
+function getLogEmoji(category, level) {
+    if (level === 'SUCCESS') return '✓';
+    if (level === 'ERROR') return '✗';
+    if (level === 'WARNING') return '⚠';
+    if (level === 'PROGRESS') return '⏳';
+
+    // Category-specific emojis for INFO level
+    switch (category) {
+        case 'INIT': return '🚀';
+        case 'SKILLS': return '📚';
+        case 'MCP': return '🔌';
+        case 'TOOLS': return '🛠';
+        case 'CHAT': return '💬';
+        default: return '•';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function quickAction(action) {

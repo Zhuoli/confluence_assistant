@@ -9,6 +9,7 @@ import type { ConversationMessage, AgentOptions } from './types.js';
 import { FilesystemTools } from './filesystem-tools.js';
 import { SmartExploration } from './smart-exploration.js';
 import { MCPClientManager, type MCPServerConfig } from './mcp-client.js';
+import { Logger, LogCategory } from '../utils/logger.js';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -69,14 +70,17 @@ export class AtlassianAgentSDK {
       return;
     }
 
-    console.error('Initializing Atlassian Agent SDK...');
+    Logger.initStart();
 
     try {
       // Load Skills
       if (this.options.enableSkills !== false) {
-        console.error('Loading Skills...');
+        Logger.skillsLoading();
         await this.skillsLoader.load();
-        console.error(`✓ Loaded ${this.skillsLoader.getCount()} skills`);
+
+        const skillCount = this.skillsLoader.getCount();
+        const skillNames = this.skillsLoader.getSkillNames();
+        Logger.skillsLoaded(skillCount, skillNames);
       }
 
       // Start MCP servers based on config
@@ -85,10 +89,11 @@ export class AtlassianAgentSDK {
       }
 
       // Build system prompt with Skills context
+      Logger.progress(LogCategory.INIT, 'Building system prompt...');
       const systemPrompt = this.buildSystemPrompt();
 
       // Initialize AI provider
-      console.error(`Initializing ${this.config.modelProvider} provider...`);
+      Logger.progress(LogCategory.INIT, `Initializing ${this.config.modelProvider} provider...`);
       this.provider = createProvider(this.config, systemPrompt);
 
       // Register tools if available (Claude provider only for now)
@@ -97,29 +102,30 @@ export class AtlassianAgentSDK {
 
         // Add filesystem tools if available
         if (this.filesystemTools && this.filesystemTools.isAvailable()) {
-          allTools.push(...this.createFilesystemTools());
-          console.error('✓ Filesystem tools added');
+          const fsTools = this.createFilesystemTools();
+          allTools.push(...fsTools);
+          Logger.success(LogCategory.TOOLS, `Added ${fsTools.length} filesystem tools`);
         }
 
         // Add MCP tools from all connected servers
         const mcpTools = this.getMCPTools();
         if (mcpTools.length > 0) {
           allTools.push(...mcpTools);
-          console.error(`✓ Added ${mcpTools.length} MCP tools from ${this.mcpClientManager.getServerCount()} servers`);
+          Logger.success(LogCategory.TOOLS, `Added ${mcpTools.length} MCP tools from ${this.mcpClientManager.getServerCount()} servers`);
         }
 
         // Register all tools with a unified handler
         if (allTools.length > 0) {
           const handler = this.createToolHandler();
           (this.provider as any).registerTools(allTools, handler);
-          console.error(`✓ Registered ${allTools.length} total tools`);
+          Logger.toolsRegistered(allTools.length);
         }
       }
 
       this.initialized = true;
-      console.error('✓ Agent initialized successfully');
+      Logger.initComplete();
     } catch (error) {
-      console.error('Failed to initialize agent:', error);
+      Logger.error(LogCategory.INIT, `Failed to initialize: ${error}`);
       throw error;
     }
   }
@@ -245,41 +251,61 @@ export class AtlassianAgentSDK {
    */
   private createToolHandler(): (toolName: string, toolInput: any) => Promise<any> {
     return async (toolName: string, toolInput: any) => {
+      const startTime = Date.now();
+
       // Handle filesystem tools
       if (this.filesystemTools) {
         switch (toolName) {
           case 'read_file':
-            return await this.filesystemTools.readFile(toolInput.path);
+            Logger.toolCalling(toolName, { path: toolInput.path });
+            const fileContent = await this.filesystemTools.readFile(toolInput.path);
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
+            return fileContent;
 
           case 'list_directory':
-            return await this.filesystemTools.listDirectory(toolInput.path);
+            Logger.toolCalling(toolName, { path: toolInput.path });
+            const dirListing = await this.filesystemTools.listDirectory(toolInput.path);
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
+            return dirListing;
 
           case 'search_files':
-            return await this.filesystemTools.searchFiles(
+            Logger.toolCalling(toolName, { pattern: toolInput.pattern });
+            const searchResults = await this.filesystemTools.searchFiles(
               toolInput.pattern,
               toolInput.base_dir
             );
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
+            return searchResults;
 
           case 'get_file_info':
-            return await this.filesystemTools.getFileInfo(toolInput.path);
+            Logger.toolCalling(toolName, { path: toolInput.path });
+            const fileInfo = await this.filesystemTools.getFileInfo(toolInput.path);
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
+            return fileInfo;
 
           case 'list_code_repositories':
-            return await this.filesystemTools.getAllowedDirectoriesSummary();
+            Logger.toolCalling(toolName);
+            const repos = await this.filesystemTools.getAllowedDirectoriesSummary();
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
+            return repos;
 
           case 'get_project_overview':
             if (!this.smartExploration) {
               throw new Error('Smart exploration not available');
             }
+            Logger.toolCalling(toolName, { repo: toolInput.repo_path });
             const context = await this.smartExploration.getProjectOverview(
               toolInput.repo_path,
               { maxAnchorFiles: toolInput.max_files }
             );
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
             return JSON.stringify(context, null, 2);
 
           case 'find_relevant_files':
             if (!this.smartExploration) {
               throw new Error('Smart exploration not available');
             }
+            Logger.toolCalling(toolName, { query: toolInput.query });
             // First get project overview as context
             const overviewContext = await this.smartExploration.getProjectOverview(toolInput.repo_path);
             const relevantFiles = await this.smartExploration.findRelevantFiles(
@@ -288,6 +314,7 @@ export class AtlassianAgentSDK {
               overviewContext,
               toolInput.max_results || 10
             );
+            Logger.toolCallSuccess(toolName, Date.now() - startTime);
             return JSON.stringify(relevantFiles, null, 2);
         }
       }
@@ -296,6 +323,7 @@ export class AtlassianAgentSDK {
       try {
         return await this.mcpClientManager.callTool(toolName, toolInput);
       } catch (error) {
+        Logger.toolCallFailed(toolName, String(error));
         throw new Error(`Unknown tool or tool error: ${toolName} - ${error}`);
       }
     };
@@ -305,7 +333,7 @@ export class AtlassianAgentSDK {
    * Start individual MCP servers based on config flags
    */
   private async startMCPServers(): Promise<void> {
-    console.error('Starting MCP servers...');
+    Logger.mcpStarting();
 
     const projectRoot = resolve(__dirname, '..', '..');
     const servers: MCPServerConfig[] = [];
@@ -349,17 +377,19 @@ export class AtlassianAgentSDK {
     // Start all configured servers
     for (const serverConfig of servers) {
       try {
+        Logger.mcpServerStarting(serverConfig.name);
         await this.mcpClientManager.startServer(serverConfig);
       } catch (error) {
-        console.error(`Warning: Failed to start ${serverConfig.name} MCP server:`, error);
+        Logger.mcpServerFailed(serverConfig.name, String(error));
         // Continue with other servers even if one fails
       }
     }
 
     if (servers.length === 0) {
-      console.error('No MCP servers configured to start');
+      Logger.info(LogCategory.MCP, 'No MCP servers configured');
     } else {
-      console.error(`✓ Started ${this.mcpClientManager.getServerCount()}/${servers.length} MCP servers`);
+      const totalTools = this.mcpClientManager.getAllTools().length;
+      Logger.mcpServersReady(this.mcpClientManager.getServerCount(), totalTools);
     }
   }
 
