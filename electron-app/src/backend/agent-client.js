@@ -141,7 +141,7 @@ class AgentClient {
 
             console.log('Calling TypeScript agent:', nodePath, args.join(' '));
 
-            const process = spawn(nodePath, args, {
+            const childProcess = spawn(nodePath, args, {
                 cwd: projectRoot,
                 env: {
                     ...process.env,
@@ -176,15 +176,15 @@ class AgentClient {
             let stdout = '';
             let stderr = '';
 
-            process.stdout.on('data', (data) => {
+            childProcess.stdout.on('data', (data) => {
                 stdout += data.toString();
             });
 
-            process.stderr.on('data', (data) => {
+            childProcess.stderr.on('data', (data) => {
                 stderr += data.toString();
             });
 
-            process.on('close', (code) => {
+            childProcess.on('close', (code) => {
                 if (code !== 0) {
                     console.error('TypeScript agent error:', stderr);
                     reject(new Error(`Agent exited with code ${code}: ${stderr}`));
@@ -202,7 +202,7 @@ class AgentClient {
                 }
             });
 
-            process.on('error', (error) => {
+            childProcess.on('error', (error) => {
                 console.error('Failed to start TypeScript agent:', error);
                 reject(error);
             });
