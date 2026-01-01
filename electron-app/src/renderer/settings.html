@@ -150,6 +150,21 @@
                             <span class="status-text">Filesystem tools + Skills</span>
                         </div>
                     </div>
+
+                    <!-- Custom MCP Servers -->
+                    <div id="customMcpServersContainer">
+                        <!-- Custom servers will be dynamically added here -->
+                    </div>
+
+                    <!-- Add Custom MCP Server Button -->
+                    <div style="margin-top: 16px;">
+                        <button class="btn-add-mcp" onclick="openAddCustomMcpServer()">
+                            ➕ Add Custom MCP Server
+                        </button>
+                        <p class="section-description" style="margin-top: 8px; font-size: 13px;">
+                            Add any MCP-compatible server following the standard MCP protocol
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -447,6 +462,102 @@
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="backToCodeRepoSettings()">Cancel</button>
                 <button class="btn-primary" onclick="saveSkill()">Save Skill</button>
+            </div>
+        </div>
+
+        <!-- Custom MCP Server Configuration View -->
+        <div id="customMcpServerView" class="settings-view">
+            <div class="modal-header">
+                <button class="back-btn" onclick="backToMainSettings()">← Back</button>
+                <h2 id="customMcpServerTitle">🔌 Add Custom MCP Server</h2>
+                <button class="close-btn" onclick="closeSettings()">×</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Server Information</h3>
+                    <div class="form-group">
+                        <label>Server Name <span class="required">*</span></label>
+                        <input type="text" id="customMcpName" placeholder="My Custom MCP Server">
+                        <small class="hint">Display name for this MCP server</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" id="customMcpDescription" placeholder="Custom tools for...">
+                        <small class="hint">Brief description of what this server provides</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Icon (emoji)</label>
+                        <input type="text" id="customMcpIcon" placeholder="🔧" maxlength="2">
+                        <small class="hint">Optional emoji icon (e.g., 🔧, 📦, 🚀)</small>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <div class="settings-section">
+                    <h3>Server Execution</h3>
+                    <div class="form-group">
+                        <label>Command <span class="required">*</span></label>
+                        <input type="text" id="customMcpCommand" placeholder="node">
+                        <small class="hint">Executable command (e.g., node, python, npx)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Arguments <span class="required">*</span></label>
+                        <input type="text" id="customMcpArgs" placeholder="/path/to/server.js or mcp-server-package">
+                        <small class="hint">Arguments for the command (path to server script or npm package)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Working Directory</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="customMcpCwd" placeholder="/path/to/server/directory" style="flex: 1;">
+                            <button class="btn-browse" onclick="browseCustomMcpCwd()">Browse</button>
+                        </div>
+                        <small class="hint">Optional: Directory to run the server from</small>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <div class="settings-section">
+                    <h3>Environment Variables</h3>
+                    <p class="section-description">
+                        Optional environment variables to pass to the MCP server (one per line: KEY=value)
+                    </p>
+                    <div class="form-group">
+                        <textarea id="customMcpEnv" rows="4" placeholder="API_KEY=your_api_key_here&#10;BASE_URL=https://api.example.com"></textarea>
+                        <small class="hint">Format: KEY=value (one per line)</small>
+                    </div>
+                </div>
+
+                <hr class="settings-divider">
+
+                <div class="settings-section">
+                    <h3>Configuration Examples</h3>
+                    <div class="info-box">
+                        <strong>Example 1: Node.js MCP Server</strong>
+                        <pre style="margin-top: 0.5rem; font-size: 0.875rem;">
+Command: node
+Arguments: /path/to/my-mcp-server/index.js</pre>
+                    </div>
+                    <div class="info-box" style="margin-top: 8px;">
+                        <strong>Example 2: Python MCP Server</strong>
+                        <pre style="margin-top: 0.5rem; font-size: 0.875rem;">
+Command: python
+Arguments: -m my_mcp_server</pre>
+                    </div>
+                    <div class="info-box" style="margin-top: 8px;">
+                        <strong>Example 3: NPM Package</strong>
+                        <pre style="margin-top: 0.5rem; font-size: 0.875rem;">
+Command: npx
+Arguments: @modelcontextprotocol/server-example</pre>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="backToMainSettings()">Cancel</button>
+                <button class="btn-primary" onclick="saveCustomMcpServer()">Save MCP Server</button>
             </div>
         </div>
 

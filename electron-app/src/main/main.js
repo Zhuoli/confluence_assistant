@@ -693,6 +693,80 @@ ipcMain.on('browse-directory', async (event) => {
     }
 });
 
+// ========================================
+// Custom MCP Server Management
+// ========================================
+
+ipcMain.on('get-custom-mcp-servers', async (event) => {
+    try {
+        const customMcpServersPath = path.join(app.getPath('userData'), 'custom-mcp-servers.json');
+
+        if (fs.existsSync(customMcpServersPath)) {
+            const data = fs.readFileSync(customMcpServersPath, 'utf8');
+            const servers = JSON.parse(data);
+            event.reply('custom-mcp-servers-loaded', servers);
+        } else {
+            event.reply('custom-mcp-servers-loaded', []);
+        }
+    } catch (error) {
+        console.error('Failed to load custom MCP servers:', error);
+        event.reply('custom-mcp-servers-loaded', []);
+    }
+});
+
+ipcMain.on('save-custom-mcp-server', async (event, server) => {
+    try {
+        const customMcpServersPath = path.join(app.getPath('userData'), 'custom-mcp-servers.json');
+
+        // Load existing servers
+        let servers = [];
+        if (fs.existsSync(customMcpServersPath)) {
+            const data = fs.readFileSync(customMcpServersPath, 'utf8');
+            servers = JSON.parse(data);
+        }
+
+        // Find and update existing server or add new one
+        const existingIndex = servers.findIndex(s => s.id === server.id);
+        if (existingIndex >= 0) {
+            servers[existingIndex] = server;
+        } else {
+            servers.push(server);
+        }
+
+        // Save to file
+        fs.writeFileSync(customMcpServersPath, JSON.stringify(servers, null, 2));
+
+        event.reply('custom-mcp-server-saved', true);
+    } catch (error) {
+        console.error('Failed to save custom MCP server:', error);
+        event.reply('custom-mcp-server-saved', false);
+    }
+});
+
+ipcMain.on('delete-custom-mcp-server', async (event, serverId) => {
+    try {
+        const customMcpServersPath = path.join(app.getPath('userData'), 'custom-mcp-servers.json');
+
+        // Load existing servers
+        let servers = [];
+        if (fs.existsSync(customMcpServersPath)) {
+            const data = fs.readFileSync(customMcpServersPath, 'utf8');
+            servers = JSON.parse(data);
+        }
+
+        // Filter out the server to delete
+        servers = servers.filter(s => s.id !== serverId);
+
+        // Save to file
+        fs.writeFileSync(customMcpServersPath, JSON.stringify(servers, null, 2));
+
+        event.reply('custom-mcp-server-deleted', true);
+    } catch (error) {
+        console.error('Failed to delete custom MCP server:', error);
+        event.reply('custom-mcp-server-deleted', false);
+    }
+});
+
 ipcMain.on('chat-message', async (event, data) => {
     const { message } = data;
 

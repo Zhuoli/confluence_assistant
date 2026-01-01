@@ -657,6 +657,221 @@ function testOciMcpConnection() {
     });
 }
 
+// ========================================
+// Custom MCP Server Management
+// ========================================
+
+let currentEditingMcpServerId = null;
+let customMcpServers = [];
+
+function openAddCustomMcpServer() {
+    currentEditingMcpServerId = null;
+    document.getElementById('customMcpServerTitle').textContent = '🔌 Add Custom MCP Server';
+
+    // Clear form
+    document.getElementById('customMcpName').value = '';
+    document.getElementById('customMcpDescription').value = '';
+    document.getElementById('customMcpIcon').value = '';
+    document.getElementById('customMcpCommand').value = '';
+    document.getElementById('customMcpArgs').value = '';
+    document.getElementById('customMcpCwd').value = '';
+    document.getElementById('customMcpEnv').value = '';
+
+    showSettingsView('customMcpServerView');
+}
+
+function editCustomMcpServer(serverId) {
+    const server = customMcpServers.find(s => s.id === serverId);
+    if (!server) {
+        alert('Server not found');
+        return;
+    }
+
+    currentEditingMcpServerId = serverId;
+    document.getElementById('customMcpServerTitle').textContent = '🔌 Edit Custom MCP Server';
+
+    // Populate form
+    document.getElementById('customMcpName').value = server.name || '';
+    document.getElementById('customMcpDescription').value = server.description || '';
+    document.getElementById('customMcpIcon').value = server.icon || '';
+    document.getElementById('customMcpCommand').value = server.command || '';
+    document.getElementById('customMcpArgs').value = server.args || '';
+    document.getElementById('customMcpCwd').value = server.cwd || '';
+
+    // Convert env object to string
+    if (server.env) {
+        const envString = Object.entries(server.env)
+            .map(([key, value]) => `${key}=${value}`)
+            .join('\n');
+        document.getElementById('customMcpEnv').value = envString;
+    } else {
+        document.getElementById('customMcpEnv').value = '';
+    }
+
+    showSettingsView('customMcpServerView');
+}
+
+function saveCustomMcpServer() {
+    const name = document.getElementById('customMcpName').value.trim();
+    const description = document.getElementById('customMcpDescription').value.trim();
+    const icon = document.getElementById('customMcpIcon').value.trim() || '🔧';
+    const command = document.getElementById('customMcpCommand').value.trim();
+    const args = document.getElementById('customMcpArgs').value.trim();
+    const cwd = document.getElementById('customMcpCwd').value.trim();
+    const envString = document.getElementById('customMcpEnv').value.trim();
+
+    // Validate required fields
+    if (!name) {
+        alert('Server name is required');
+        return;
+    }
+
+    if (!command) {
+        alert('Command is required');
+        return;
+    }
+
+    if (!args) {
+        alert('Arguments are required');
+        return;
+    }
+
+    // Parse environment variables
+    const env = {};
+    if (envString) {
+        const lines = envString.split('\n');
+        for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed && trimmed.includes('=')) {
+                const [key, ...valueParts] = trimmed.split('=');
+                env[key.trim()] = valueParts.join('=').trim();
+            }
+        }
+    }
+
+    const server = {
+        id: currentEditingMcpServerId || Date.now().toString(),
+        name,
+        description,
+        icon,
+        command,
+        args,
+        cwd: cwd || undefined,
+        env: Object.keys(env).length > 0 ? env : undefined,
+        enabled: true
+    };
+
+    // Save via IPC
+    ipcRenderer.send('save-custom-mcp-server', server);
+    ipcRenderer.once('custom-mcp-server-saved', (event, success) => {
+        if (success) {
+            loadCustomMcpServers();
+            backToMainSettings();
+        } else {
+            alert('Failed to save custom MCP server');
+        }
+    });
+}
+
+function deleteCustomMcpServer(serverId) {
+    if (!confirm('Are you sure you want to delete this custom MCP server?')) {
+        return;
+    }
+
+    ipcRenderer.send('delete-custom-mcp-server', serverId);
+    ipcRenderer.once('custom-mcp-server-deleted', (event, success) => {
+        if (success) {
+            loadCustomMcpServers();
+        } else {
+            alert('Failed to delete custom MCP server');
+        }
+    });
+}
+
+function toggleCustomMcpServer(serverId, enabled) {
+    const server = customMcpServers.find(s => s.id === serverId);
+    if (!server) return;
+
+    server.enabled = enabled;
+
+    ipcRenderer.send('save-custom-mcp-server', server);
+    ipcRenderer.once('custom-mcp-server-saved', (event, success) => {
+        if (success) {
+            loadCustomMcpServers();
+        }
+    });
+}
+
+function loadCustomMcpServers() {
+    ipcRenderer.send('get-custom-mcp-servers');
+    ipcRenderer.once('custom-mcp-servers-loaded', (event, servers) => {
+        customMcpServers = servers || [];
+        renderCustomMcpServers();
+    });
+}
+
+function renderCustomMcpServers() {
+    const container = document.getElementById('customMcpServersContainer');
+    if (!container) return;
+
+    if (customMcpServers.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    const html = customMcpServers.map(server => `
+        <div class="mcp-server-card" style="margin-top: 16px;">
+            <div class="mcp-server-header">
+                <div class="mcp-server-info">
+                    <div class="mcp-server-icon">${server.icon || '🔧'}</div>
+                    <div>
+                        <h4>${server.name}</h4>
+                        <p class="mcp-server-desc">${server.description || 'Custom MCP Server'}</p>
+                    </div>
+                </div>
+                <div class="mcp-server-actions">
+                    <label class="toggle-switch">
+                        <input type="checkbox" ${server.enabled ? 'checked' : ''} onchange="toggleCustomMcpServer('${server.id}', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div class="custom-mcp-actions">
+                        <button class="btn-edit-mcp" onclick="editCustomMcpServer('${server.id}')">
+                            ✏️ Edit
+                        </button>
+                        <button class="btn-delete-mcp" onclick="deleteCustomMcpServer('${server.id}')">
+                            🗑️ Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="mcp-server-status">
+                <span class="status-badge optional">Custom</span>
+                <span class="status-text">${server.command} ${server.args}</span>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+function browseCustomMcpCwd() {
+    ipcRenderer.send('browse-directory');
+    ipcRenderer.once('directory-selected', (event, path) => {
+        if (path) {
+            document.getElementById('customMcpCwd').value = path;
+        }
+    });
+}
+
+// Load custom MCP servers when settings modal opens
+const originalOpenSettings = openSettings;
+window.openSettings = function() {
+    if (originalOpenSettings) {
+        originalOpenSettings();
+    }
+    loadCustomMcpServers();
+};
+
 // Close modal when clicking outside
 window.addEventListener('click', (event) => {
     if (event.target === settingsModal) {
