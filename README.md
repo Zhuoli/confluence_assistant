@@ -506,6 +506,63 @@ confluence_assistant/
 
 ---
 
+## Testing MCP Servers
+
+Test MCP servers and authentication without involving an LLM provider.
+
+### Quick Authentication Test
+
+Verify your credentials work before testing MCP servers:
+
+```bash
+# Test Atlassian (Jira + Confluence) credentials
+npm run test:auth:atlassian
+
+# Test Oracle Cloud credentials
+npm run test:auth:oci
+
+# Test all authentication
+npm run test:auth all
+```
+
+### Test MCP Protocol
+
+Test MCP servers via JSON-RPC protocol (how LLMs communicate):
+
+```bash
+# Test Atlassian MCP server
+npm run test:mcp:atlassian
+
+# Test Oracle Cloud MCP server
+npm run test:mcp:oci
+```
+
+### Interactive Testing with MCP Inspector
+
+Launch official Anthropic MCP Inspector tool with GUI:
+
+```bash
+# Test Atlassian MCP interactively
+npm run inspector:atlassian
+
+# Test Oracle Cloud MCP interactively
+npm run inspector:oci
+```
+
+The inspector opens in your browser and lets you:
+- 📋 Browse all available tools
+- 🔧 Call tools with custom arguments
+- 📊 View server logs and debug output
+- 🔍 Inspect tool schemas
+
+### Comprehensive Testing Guide
+
+For detailed testing instructions, troubleshooting, and advanced testing methods, see:
+
+**📖 [Complete MCP Testing Guide](docs/TESTING_MCP_SERVERS.md)**
+
+---
+
 ## Development
 
 ### Build TypeScript
