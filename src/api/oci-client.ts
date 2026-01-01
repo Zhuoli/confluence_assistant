@@ -8,13 +8,24 @@ import * as os from 'os';
 import * as path from 'path';
 
 /**
+ * Expand tilde (~) in file paths to home directory
+ */
+function expandPath(filepath: string | undefined): string | undefined {
+  if (!filepath) return filepath;
+  if (filepath.startsWith('~/') || filepath === '~') {
+    return path.join(os.homedir(), filepath.slice(1));
+  }
+  return filepath;
+}
+
+/**
  * OCI Client using Session Token Authentication
  *
  * This client ONLY uses Session Token for authentication.
  * Session tokens must be created using: oci session authenticate --profile-name <profile> --region <region>
  */
 export class OCIClient {
-  private provider: common.ConfigFileAuthenticationDetailsProvider;
+  private provider: common.SessionAuthDetailProvider;
   private region: string;
   private compartmentId: string;
   private tenancyId: string;
@@ -41,19 +52,20 @@ export class OCIClient {
     this.compartmentId = config.ociMcpCompartmentId;
     this.tenancyId = config.ociMcpTenancyId;
 
-    // Determine config file path
-    const configPath =
+    // Determine config file path and expand tilde if present
+    const rawConfigPath =
       config.ociMcpConfigPath ||
       config.ociConfigPath ||
       path.join(os.homedir(), '.oci', 'config');
+    const configPath = expandPath(rawConfigPath) || rawConfigPath;
 
     // Determine profile name
     const profile = config.ociMcpProfile || config.ociProfile || 'DEFAULT';
 
     try {
-      // Initialize Session Token authentication provider
-      // This will automatically use session token files if present in the profile
-      this.provider = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
+      // Initialize Session Token authentication provider (specifically for session tokens)
+      // SessionAuthDetailProvider handles security_token_file from the config profile
+      this.provider = new common.SessionAuthDetailProvider(configPath, profile);
 
       console.error(`✓ OCI MCP Client initialized with Session Token authentication`);
       console.error(`  - Profile: ${profile}`);

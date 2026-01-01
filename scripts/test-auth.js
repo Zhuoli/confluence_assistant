@@ -22,6 +22,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, '..');
 
+/**
+ * Expand tilde (~) in file paths to home directory
+ * @param {string} filepath - Path that may contain ~
+ * @returns {string} - Expanded path
+ */
+function expandPath(filepath) {
+  if (!filepath) return filepath;
+  if (filepath.startsWith('~/') || filepath === '~') {
+    return path.join(os.homedir(), filepath.slice(1));
+  }
+  return filepath;
+}
+
 // Load environment variables
 config({ path: join(projectRoot, '.env') });
 
@@ -180,7 +193,8 @@ async function testOCIAuth() {
     const region = process.env.OCI_MCP_REGION;
     const compartmentId = process.env.OCI_MCP_COMPARTMENT_ID;
     const tenancyId = process.env.OCI_MCP_TENANCY_ID;
-    const configPath = process.env.OCI_MCP_CONFIG_PATH || path.join(os.homedir(), '.oci', 'config');
+    // Expand tilde in config path if present
+    const configPath = expandPath(process.env.OCI_MCP_CONFIG_PATH) || path.join(os.homedir(), '.oci', 'config');
     const profile = process.env.OCI_MCP_PROFILE || 'DEFAULT';
 
     // Check configuration
@@ -230,7 +244,19 @@ async function testOCIAuth() {
     // Test OCI Authentication
     log('\n📋 Test 1: OCI Session Token Validation', 'cyan');
     try {
-      const provider = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
+      // First, manually load and verify the config file
+      const fs = await import('fs');
+      const configContent = fs.readFileSync(configPath, 'utf8');
+      log('🔍 Debug: Config file loaded successfully', 'yellow');
+
+      // Check if config has session token file
+      if (!configContent.includes('security_token_file')) {
+        throw new Error(`Profile ${profile} does not have security_token_file configured. Please run: oci session authenticate --profile-name ${profile} --region ${region}`);
+      }
+      log('🔍 Debug: Config has security_token_file', 'yellow');
+
+      // Use SessionAuthDetailProvider specifically for session token authentication
+      const provider = new common.SessionAuthDetailProvider(configPath, profile);
 
       const identityClient = new identity.IdentityClient({
         authenticationDetailsProvider: provider,
@@ -269,7 +295,8 @@ async function testOCIAuth() {
     // Test Tenancy Access
     log('\n📋 Test 2: OCI Tenancy Access', 'cyan');
     try {
-      const provider = new common.ConfigFileAuthenticationDetailsProvider(configPath, profile);
+      // Use SessionAuthDetailProvider specifically for session token authentication
+      const provider = new common.SessionAuthDetailProvider(configPath, profile);
       const identityClient = new identity.IdentityClient({
         authenticationDetailsProvider: provider,
       });
