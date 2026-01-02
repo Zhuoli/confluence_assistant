@@ -889,6 +889,16 @@ ipcMain.on('load-conversation', async (event, data) => {
     try {
         const conversation = await agentClient.loadConversation(id);
         event.reply('conversation-loaded', { conversation });
+
+        // Send updated conversations list to update active state in UI
+        const conversations = agentClient.getAllConversations();
+        const activeConversation = conversationManager.getActiveConversation();
+        const grouped = conversationManager.groupByTime(conversations);
+        event.reply('conversations-list', {
+            conversations,
+            grouped,
+            activeId: activeConversation ? activeConversation.id : null
+        });
     } catch (error) {
         console.error('Error loading conversation:', error);
         event.reply('conversation-error', { message: error.message });
