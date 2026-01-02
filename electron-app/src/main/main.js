@@ -4,10 +4,12 @@ const fs = require('fs');
 
 const AgentClient = require('../backend/agent-client');
 const ConfigManager = require('../backend/config');
+const ConversationManager = require('../backend/conversation-manager');
 
 let mainWindow;
 let agentClient;
 let configManager;
+let conversationManager;
 let logStream;
 
 // Find Node.js executable in common macOS locations
@@ -133,16 +135,21 @@ function createWindow() {
     });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     // Set up logging for production
     setupLogging();
 
     // Initialize configuration manager
     configManager = new ConfigManager();
 
+    // Initialize conversation manager
+    const conversationsPath = path.join(app.getPath('userData'), 'conversations.json');
+    conversationManager = new ConversationManager(conversationsPath);
+    await conversationManager.load();
+
     // Initialize agent client
     try {
-        agentClient = new AgentClient(configManager.getConfig());
+        agentClient = new AgentClient(configManager.getConfig(), conversationManager);
     } catch (error) {
         console.error('Failed to initialize agent client:', error);
     }
@@ -187,7 +194,7 @@ ipcMain.on('save-settings', (event, settings) => {
         configManager.saveConfig(settings);
 
         // Reinitialize agent client with new config
-        agentClient = new AgentClient(settings);
+        agentClient = new AgentClient(settings, conversationManager);
 
         event.reply('settings-saved', true);
     } catch (error) {
@@ -789,6 +796,77 @@ ipcMain.on('chat-message', async (event, data) => {
     } catch (error) {
         console.error('Chat error:', error);
         event.reply('chat-error', { message: error.message });
+    }
+});
+
+// Conversation management handlers
+ipcMain.on('get-conversations', (event) => {
+    try {
+        const conversations = agentClient.getAllConversations();
+        const activeConversation = conversationManager.getActiveConversation();
+        const grouped = conversationManager.groupByTime(conversations);
+
+        event.reply('conversations-list', {
+            conversations,
+            grouped,
+            activeId: activeConversation ? activeConversation.id : null
+        });
+    } catch (error) {
+        console.error('Error getting conversations:', error);
+        event.reply('conversations-error', { message: error.message });
+    }
+});
+
+ipcMain.on('new-conversation', async (event) => {
+    try {
+        const conversation = await agentClient.createNewConversation();
+        event.reply('conversation-created', { conversation });
+
+        // Also send updated conversations list
+        const conversations = agentClient.getAllConversations();
+        const grouped = conversationManager.groupByTime(conversations);
+        event.reply('conversations-list', {
+            conversations,
+            grouped,
+            activeId: conversation.id
+        });
+    } catch (error) {
+        console.error('Error creating conversation:', error);
+        event.reply('conversation-error', { message: error.message });
+    }
+});
+
+ipcMain.on('load-conversation', async (event, data) => {
+    const { id } = data;
+
+    try {
+        const conversation = await agentClient.loadConversation(id);
+        event.reply('conversation-loaded', { conversation });
+    } catch (error) {
+        console.error('Error loading conversation:', error);
+        event.reply('conversation-error', { message: error.message });
+    }
+});
+
+ipcMain.on('delete-conversation', async (event, data) => {
+    const { id } = data;
+
+    try {
+        await agentClient.deleteConversation(id);
+        event.reply('conversation-deleted', { id });
+
+        // Send updated conversations list
+        const conversations = agentClient.getAllConversations();
+        const activeConversation = conversationManager.getActiveConversation();
+        const grouped = conversationManager.groupByTime(conversations);
+        event.reply('conversations-list', {
+            conversations,
+            grouped,
+            activeId: activeConversation ? activeConversation.id : null
+        });
+    } catch (error) {
+        console.error('Error deleting conversation:', error);
+        event.reply('conversation-error', { message: error.message });
     }
 });
 

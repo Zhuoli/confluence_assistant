@@ -6,12 +6,13 @@
  */
 
 const path = require('path');
+const ConversationManager = require('./conversation-manager');
 
 // Note: We don't import the TypeScript agent directly to avoid ESM/CommonJS conflicts.
 // Instead, we spawn it as a separate Node.js process (see callNodeAgent method).
 
 class AgentClient {
-    constructor(config) {
+    constructor(config, conversationManager) {
         // Validate API key based on provider
         const provider = config.MODEL_PROVIDER || 'oci-openai';
         if (provider === 'claude' && !config.ANTHROPIC_API_KEY) {
@@ -25,7 +26,7 @@ class AgentClient {
         }
 
         this.config = config;
-        this.conversationHistory = [];
+        this.conversationManager = conversationManager;
         this.agent = null;
         this.initialized = false;
 
@@ -58,28 +59,56 @@ class AgentClient {
      */
     async sendMessage(message, onProgress) {
         try {
+            // Add user message to conversation
+            await this.conversationManager.addMessage('user', message);
+
             const response = await this.callNodeAgent(message, onProgress);
 
-            // Track conversation history
-            this.conversationHistory.push({
-                role: 'user',
-                content: message
-            });
-            this.conversationHistory.push({
-                role: 'assistant',
-                content: response
-            });
-
-            // Keep last 20 messages
-            if (this.conversationHistory.length > 20) {
-                this.conversationHistory = this.conversationHistory.slice(-20);
-            }
+            // Add assistant response to conversation
+            await this.conversationManager.addMessage('assistant', response);
 
             return response;
         } catch (error) {
             console.error('Error sending message to agent:', error);
             throw error;
         }
+    }
+
+    /**
+     * Get the current conversation messages
+     */
+    getCurrentConversation() {
+        const conversation = this.conversationManager.getActiveConversation();
+        return conversation ? conversation.messages : [];
+    }
+
+    /**
+     * Get all conversations
+     */
+    getAllConversations() {
+        return this.conversationManager.getAllConversations();
+    }
+
+    /**
+     * Create a new conversation
+     */
+    async createNewConversation() {
+        return await this.conversationManager.createConversation();
+    }
+
+    /**
+     * Load a specific conversation
+     */
+    async loadConversation(conversationId) {
+        await this.conversationManager.setActiveConversation(conversationId);
+        return this.conversationManager.getActiveConversation();
+    }
+
+    /**
+     * Delete a conversation
+     */
+    async deleteConversation(conversationId) {
+        await this.conversationManager.deleteConversation(conversationId);
     }
 
     /**
