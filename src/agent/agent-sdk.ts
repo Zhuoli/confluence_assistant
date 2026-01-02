@@ -634,6 +634,17 @@ When exploring a codebase, you MUST follow this systematic approach:
   }
 
   /**
+   * Set conversation history (useful for restoring previous conversations)
+   */
+  setHistory(history: ConversationMessage[]): void {
+    // Convert timestamps to Date objects if they're strings or numbers
+    this.conversationHistory = history.map((msg) => ({
+      ...msg,
+      timestamp: msg.timestamp instanceof Date ? msg.timestamp : new Date(msg.timestamp),
+    }));
+  }
+
+  /**
    * Cleanup resources
    */
   async cleanup(): Promise<void> {

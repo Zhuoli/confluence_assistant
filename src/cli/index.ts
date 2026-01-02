@@ -39,6 +39,7 @@ program
   .command('chat')
   .description('Start interactive chat session or send a single message')
   .option('-m, --message <message>', 'Send a single message')
+  .option('-h, --history <json>', 'Conversation history as JSON string')
   .option('--test-only', 'Test connection only (disable MCP and Skills)')
   .action(async (options) => {
     const spinner = await createSpinner('Initializing agent...');
@@ -56,6 +57,17 @@ program
 
       await agent.initialize();
       spinner.succeed('Agent initialized');
+
+      // Load conversation history if provided
+      if (options.history) {
+        try {
+          const history = JSON.parse(options.history);
+          agent.setHistory(history);
+        } catch (error) {
+          console.error(chalk.red('Failed to parse conversation history:'), error);
+          process.exit(1);
+        }
+      }
 
       if (options.message) {
         // Single message mode

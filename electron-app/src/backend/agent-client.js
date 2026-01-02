@@ -59,12 +59,16 @@ class AgentClient {
      */
     async sendMessage(message, onProgress) {
         try {
-            // Add user message to conversation
+            // Get conversation history BEFORE adding the new message
+            // The agent will add the user message internally
+            const conversation = this.conversationManager.getActiveConversation();
+            const historyMessages = conversation ? conversation.messages : [];
+
+            // Call agent with history
+            const response = await this.callNodeAgent(message, historyMessages, onProgress);
+
+            // Now add both user message and assistant response to conversation
             await this.conversationManager.addMessage('user', message);
-
-            const response = await this.callNodeAgent(message, onProgress);
-
-            // Add assistant response to conversation
             await this.conversationManager.addMessage('assistant', response);
 
             return response;
@@ -115,10 +119,11 @@ class AgentClient {
      * Call Node.js TypeScript agent via CLI
      *
      * @param {string} message - User's message
+     * @param {Array} historyMessages - Previous conversation messages
      * @param {Function} onProgress - Optional callback for streaming progress logs
      * @returns {Promise<string>} - Agent's response
      */
-    async callNodeAgent(message, onProgress) {
+    async callNodeAgent(message, historyMessages, onProgress) {
         const { spawn, execSync } = require('child_process');
         const path = require('path');
         const { app } = require('electron');
@@ -178,7 +183,16 @@ class AgentClient {
                 }
             }
 
-            // Command: node dist/cli/index.js chat --message "user message"
+            // Convert conversation history to agent SDK format
+            // The agent expects { role, content, timestamp: Date }
+            // Our messages have { role, content, timestamp: number }
+            const agentHistory = historyMessages.map(msg => ({
+                role: msg.role,
+                content: msg.content,
+                timestamp: new Date(msg.timestamp).toISOString()
+            }));
+
+            // Command: node dist/cli/index.js chat --message "user message" --history '[...]'
             const args = [
                 cliPath,
                 'chat',
@@ -186,7 +200,14 @@ class AgentClient {
                 message
             ];
 
-            console.log('Calling TypeScript agent:', nodePath, args.join(' '));
+            // Add history if not empty
+            if (agentHistory.length > 0) {
+                args.push('--history');
+                args.push(JSON.stringify(agentHistory));
+            }
+
+            console.log('Calling TypeScript agent:', nodePath, args.slice(0, 5).join(' '), '...');
+            console.log(`  - History: ${agentHistory.length} messages`);
 
             const childProcess = spawn(nodePath, args, {
                 cwd: projectRoot,
