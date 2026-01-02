@@ -64,9 +64,12 @@ function initializeMermaid() {
 // Configure Marked with highlight.js for syntax highlighting
 function configureMarked() {
     if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
+        console.log('[Renderer] Configuring marked.js with custom code renderer');
+
         // Create custom renderer for code blocks with syntax highlighting
         const renderer = {
             code(code, language) {
+                console.log('[Renderer] Rendering code block, language:', language);
                 const validLanguage = language && hljs.getLanguage(language) ? language : null;
                 let highlighted;
 
@@ -265,6 +268,9 @@ function addMessage(text, sender, isError = false) {
 }
 
 function formatMessage(text) {
+    console.log('[Renderer] formatMessage called, text length:', text.length);
+    console.log('[Renderer] marked available:', typeof marked !== 'undefined');
+
     // Use marked for full markdown rendering if available
     if (typeof marked !== 'undefined') {
         try {
