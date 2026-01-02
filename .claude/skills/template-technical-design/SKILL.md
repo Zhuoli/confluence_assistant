@@ -1,156 +1,124 @@
 ---
-name: template-technical-design
-description: Template for Technical Design Documents following ECAR format
+name: writing-technical-designs
+description: Guides creation of Technical Design Documents using ECAR format (Executive Summary, Context, Approach, Resolution). Outputs Markdown with Mermaid diagrams. Use when asked to write TDD, technical design, architecture document, system design, or design doc. Triggers on "write a design doc", "create TDD", "document this architecture", or technical planning requests.
 ---
 
-# Technical Design Document Template (ECAR Format)
+# Writing Technical Design Documents
 
-Use this template when creating Technical Design Documents (TDD) in Confluence.
+Output format: **Markdown with Mermaid diagrams**. Follow ECAR structure.
 
 ## ECAR Structure
 
-### 1. **Executive Summary / Introduction**
-- Brief overview of what is being designed (1-2 paragraphs)
-- Problem statement
-- Proposed solution at high level
-- Key stakeholders and decision makers
+| Section | Purpose | Length |
+|---------|---------|--------|
+| **E**xecutive Summary | What and why (high-level) | 1-2 paragraphs |
+| **C**ontext | Current state, constraints, drivers | 2-4 paragraphs |
+| **A**pproach | Technical design, diagrams, specs | Main body |
+| **R**esolution | Plan, risks, alternatives, next steps | 2-4 sections |
 
-**Example:**
-```
-This document describes the technical design for implementing OAuth 2.0 authentication
-in our API gateway. The current basic authentication system lacks modern security features
-and doesn't support single sign-on. This design proposes migrating to OAuth 2.0 with
-JWT tokens to improve security and enable SSO integration.
+## Document Header (Always Include)
+
+```markdown
+# Technical Design: [Title]
+
+| Field | Value |
+|-------|-------|
+| Status | Draft / Under Review / Approved / Implemented |
+| Author | [Name] |
+| Reviewers | [Names] |
+| Last Updated | [Date] |
+| Related Tickets | [Links] |
 ```
 
-### 2. **Context**
-- Background information
+## Section Guidelines
+
+### Executive Summary
+- Problem statement in 1-2 sentences
+- Proposed solution in 1-2 sentences
+- Key stakeholders
+
+### Context
 - Current state / existing system
-- Why this design is needed
-- Business drivers
-- Related systems and dependencies
-- Assumptions and constraints
+- Pain points driving this design
+- Constraints (timeline, budget, compliance)
+- Dependencies on other systems
 
-**What to include:**
-- Current architecture diagram (if applicable)
-- Pain points with current approach
-- Business requirements that drove this need
-- Timeline or urgency considerations
-- Budget/resource constraints
-- Regulatory or compliance requirements
+### Approach
+Required subsections:
+- **High-Level Architecture** (include Mermaid diagram)
+- **Component Details** (table format)
+- **Data Flow** (include Mermaid sequence diagram if applicable)
+- **API Specifications** (if applicable)
+- **Security Considerations**
 
-### 3. **Approach / Architecture**
-- Detailed technical design
-- Architecture diagrams
-- Component descriptions
-- Data flow diagrams
-- API specifications
-- Database schema changes
-- Technology choices and justification
+### Resolution
+Required subsections:
+- **Implementation Phases** (numbered list with milestones)
+- **Risks & Mitigations** (table format)
+- **Alternatives Considered** (why rejected)
+- **Success Criteria** (measurable metrics)
 
-**Key sections:**
-- **High-Level Architecture**: Overall system design with component diagram
-- **Detailed Design**: Specific implementation details for each component
-- **Data Models**: Schema changes, data structures
-- **APIs/Interfaces**: Endpoint specifications, request/response formats
-- **Technology Stack**: Languages, frameworks, libraries, tools
-- **Security Considerations**: Authentication, authorization, data protection
-- **Scalability & Performance**: Expected load, scaling strategy
-- **Monitoring & Observability**: Metrics, logging, alerting
+## Mermaid Diagrams
 
-### 4. **Resolution / Recommendations**
-- Implementation plan
-- Rollout strategy
-- Testing approach
-- Risks and mitigations
-- Success metrics
-- Alternative approaches considered (and why rejected)
-- Open questions requiring decisions
-- Next steps
-
-**What to include:**
-- **Implementation Phases**: Break down into milestones
-- **Testing Strategy**: Unit, integration, E2E, performance testing
-- **Deployment Plan**: Blue-green, canary, feature flags
-- **Rollback Strategy**: How to revert if issues arise
-- **Risks & Mitigations**: Identify risks with mitigation plans
-- **Alternatives Considered**: Document other approaches and trade-offs
-- **Success Criteria**: Metrics to measure success
-- **Timeline**: Estimated timeline for each phase
-
-## HTML Formatting Guidelines
-
-When generating Confluence HTML:
-
-```html
-<h1>Technical Design: [Title]</h1>
-
-<h2>Executive Summary</h2>
-<p>[Brief overview...]</p>
-
-<h2>Context</h2>
-<h3>Current State</h3>
-<p>[Description...]</p>
-
-<h3>Problem Statement</h3>
-<p>[Problems being solved...]</p>
-
-<h2>Approach</h2>
-<h3>High-Level Architecture</h3>
-<ac:structured-macro ac:name="info">
-  <ac:rich-text-body>
-    <p>Architecture diagram would go here</p>
-  </ac:rich-text-body>
-</ac:structured-macro>
-
-<h3>Component Details</h3>
-<table>
-  <tr><th>Component</th><th>Responsibility</th><th>Technology</th></tr>
-  <tr><td>API Gateway</td><td>Request routing</td><td>Kong</td></tr>
-</table>
-
-<h2>Resolution</h2>
-<h3>Implementation Plan</h3>
-<ol>
-  <li>Phase 1: Infrastructure setup</li>
-  <li>Phase 2: Core implementation</li>
-  <li>Phase 3: Testing and rollout</li>
-</ol>
-
-<h3>Risks and Mitigations</h3>
-<table>
-  <tr><th>Risk</th><th>Impact</th><th>Mitigation</th></tr>
-  <tr><td>[Risk]</td><td>High</td><td>[Mitigation strategy]</td></tr>
-</table>
+### Architecture Diagram
+```markdown
+```mermaid
+flowchart TB
+    subgraph Client
+        UI[Web App]
+    end
+    subgraph Backend
+        API[API Gateway]
+        SVC[Service]
+        DB[(Database)]
+    end
+    UI --> API --> SVC --> DB
+```
 ```
 
-## Best Practices
+### Sequence Diagram
+```markdown
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant A as API
+    participant S as Service
+    C->>A: Request
+    A->>S: Process
+    S-->>A: Response
+    A-->>C: Result
+```
+```
 
-1. **Be Specific**: Include concrete examples, not just abstract descriptions
-2. **Use Diagrams**: Architecture and flow diagrams are crucial
-3. **Consider Alternatives**: Show you evaluated multiple approaches
-4. **Quantify**: Include metrics, SLAs, performance targets
-5. **Link References**: Link to related docs, tickets, repos
-6. **Keep Updated**: Mark document status (Draft, Under Review, Approved, Implemented)
-7. **Version History**: Track major changes at the bottom
+### Component Table Format
+```markdown
+| Component | Responsibility | Technology |
+|-----------|----------------|------------|
+| API Gateway | Request routing, auth | Kong |
+| Service | Business logic | Python/FastAPI |
+| Database | Data persistence | PostgreSQL |
+```
 
-## Document Metadata
+### Risk Table Format
+```markdown
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| [Risk description] | High/Med/Low | High/Med/Low | [Strategy] |
+```
 
-Always include at the top:
-- **Status**: Draft | Under Review | Approved | Implemented | Obsolete
-- **Author**: [Name]
-- **Reviewers**: [Names]
-- **Last Updated**: [Date]
-- **Related Tickets**: [Jira links]
-- **Related Documents**: [Links to related designs]
+## Anti-Patterns
 
-## Common Sections to Add (Optional)
+❌ Abstract descriptions without concrete details  
+❌ Missing diagrams in Approach section  
+❌ No alternatives considered  
+❌ Unquantified success criteria  
+❌ Missing risk assessment
 
-Depending on complexity, may also include:
-- **Glossary**: Define technical terms
-- **FAQs**: Address common questions
-- **Migration Plan**: If replacing existing system
-- **Training Plan**: If team needs new skills
-- **Cost Analysis**: Infrastructure and development costs
-- **Compliance & Security**: Regulatory requirements
-- **Disaster Recovery**: Backup and recovery procedures
+## Checklist Before Completion
+
+- [ ] Header metadata filled in
+- [ ] At least one Mermaid architecture diagram
+- [ ] Component table with technologies specified
+- [ ] Risk table with mitigations
+- [ ] Alternatives section explains trade-offs
+- [ ] Success criteria are measurable
