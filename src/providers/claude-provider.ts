@@ -74,7 +74,7 @@ export class ClaudeProvider extends BaseProvider {
 
         const requestParams: Anthropic.MessageCreateParams = {
           model: this.model,
-          max_tokens: options?.maxTokens || 2048, // Reduced to leave room for tool results
+          max_tokens: options?.maxTokens || 8192, // Increased for long documents (Claude max output is 8192)
           temperature: options?.temperature,
           system: this.systemPrompt,
           messages: conversationMessages,
