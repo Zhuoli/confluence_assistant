@@ -3,6 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: {
     'cli/index': 'src/cli/index.ts',
+    'agent/index': 'src/agent/index.ts',
     'mcp/atlassian-server': 'src/mcp/atlassian-server.ts',
     'mcp/oci-server': 'src/mcp/oci-server.ts',
     'mcp/filesystem-server': 'src/mcp/filesystem-server.ts',

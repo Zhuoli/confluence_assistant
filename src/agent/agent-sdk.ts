@@ -1,4 +1,4 @@
-import { spawn, ChildProcess } from 'child_process';
+import type { ChildProcess } from 'child_process';
 import { resolve, join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import type { Config } from '../config/index.js';

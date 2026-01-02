@@ -1,5 +1,5 @@
 import { config as loadEnv } from 'dotenv';
-import { ConfigSchema, type Config, validateConfig } from './schema.js';
+import { type Config, validateConfig } from './schema.js';
 
 // Load .env file
 loadEnv();
