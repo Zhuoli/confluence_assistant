@@ -21,6 +21,34 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Copy code to clipboard
+function copyCodeToClipboard(button) {
+    const codeText = button.getAttribute('data-code');
+
+    // Use Clipboard API
+    navigator.clipboard.writeText(codeText).then(() => {
+        // Change button text to "Copied!"
+        const copyText = button.querySelector('.copy-text');
+        const copyIcon = button.querySelector('.copy-icon');
+        const originalText = copyText.textContent;
+        const originalIcon = copyIcon.textContent;
+
+        copyText.textContent = 'Copied!';
+        copyIcon.textContent = '✓';
+        button.classList.add('copied');
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+            copyText.textContent = originalText;
+            copyIcon.textContent = originalIcon;
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy code:', err);
+        alert('Failed to copy code to clipboard');
+    });
+}
+
 // Initialize Mermaid for diagrams
 function initializeMermaid() {
     if (typeof mermaid !== 'undefined') {
@@ -58,8 +86,21 @@ function configureMarked() {
                     }
                 }
 
+                const langLabel = validLanguage || 'code';
                 const langClass = validLanguage ? ` class="language-${validLanguage}"` : '';
-                return `<pre><code${langClass}>${highlighted}</code></pre>`;
+                const escapedCode = escapeHtml(code);
+
+                // Wrap code block with copy button
+                return `<div class="code-block-wrapper">
+                    <div class="code-block-header">
+                        <span class="code-block-language">${langLabel}</span>
+                        <button class="code-copy-button" onclick="copyCodeToClipboard(this)" data-code="${escapedCode.replace(/"/g, '&quot;')}">
+                            <span class="copy-icon">📋</span>
+                            <span class="copy-text">Copy</span>
+                        </button>
+                    </div>
+                    <pre><code${langClass}>${highlighted}</code></pre>
+                </div>`;
             }
         };
 

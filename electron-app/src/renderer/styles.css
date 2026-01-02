@@ -1476,3 +1476,101 @@ body {
     background-color: rgba(0, 0, 0, 0.1);
     color: rgba(255, 255, 255, 0.9);
 }
+
+/* Code Block Wrapper with Copy Button */
+.code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f6f8fa;
+    border: 1px solid #d0d7de;
+}
+
+.code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f6f8fa;
+    border-bottom: 1px solid #d0d7de;
+}
+
+.code-block-language {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #57606a;
+    text-transform: uppercase;
+}
+
+.code-copy-button {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    background-color: #fff;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    font-size: 0.875em;
+    color: #24292f;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.code-copy-button:hover {
+    background-color: #f3f4f6;
+    border-color: #1f883d;
+}
+
+.code-copy-button .copy-icon {
+    font-size: 1em;
+}
+
+.code-copy-button.copied {
+    background-color: #dafbe1;
+    border-color: #1f883d;
+    color: #1f883d;
+}
+
+.code-block-wrapper pre {
+    margin: 0;
+    border-radius: 0 0 8px 8px;
+}
+
+.code-block-wrapper pre code {
+    display: block;
+    padding: 16px;
+    overflow-x: auto;
+}
+
+/* Dark mode code block styles for user messages */
+.message.user .code-block-wrapper {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.message.user .code-block-header {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+.message.user .code-block-language {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.message.user .code-copy-button {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+}
+
+.message.user .code-copy-button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.message.user .code-copy-button.copied {
+    background-color: rgba(26, 127, 55, 0.3);
+    border-color: #1f883d;
+    color: #7ee787;
+}

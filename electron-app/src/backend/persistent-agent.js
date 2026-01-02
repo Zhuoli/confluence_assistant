@@ -141,6 +141,43 @@ class PersistentAgent {
      * @returns {Promise<string>} - Agent's response
      */
     async sendMessage(message, onProgress) {
+        // Set up log interceptor
+        const originalConsoleError = console.error;
+        if (onProgress) {
+            console.error = (...args) => {
+                const logLine = args.join(' ');
+
+                // Parse structured logs
+                if (logLine.includes('[AGENT_LOG]')) {
+                    try {
+                        const jsonMatch = logLine.match(/\[AGENT_LOG\] (.+)/);
+                        if (jsonMatch) {
+                            const logData = JSON.parse(jsonMatch[1]);
+                            onProgress({
+                                type: 'structured_log',
+                                data: logData
+                            });
+                        }
+                    } catch (e) {
+                        // Not JSON, send as raw log
+                        onProgress({
+                            type: 'raw_log',
+                            message: logLine
+                        });
+                    }
+                } else {
+                    // Send raw log
+                    onProgress({
+                        type: 'raw_log',
+                        message: logLine
+                    });
+                }
+
+                // Still call original console.error for file logging
+                originalConsoleError.apply(console, args);
+            };
+        }
+
         try {
             // Ensure agent is initialized
             await this.initialize();
@@ -160,10 +197,6 @@ class PersistentAgent {
             this.agent.setHistory(agentHistory);
 
             // Send message to agent
-            if (onProgress) {
-                onProgress({ type: 'status', message: 'Processing your message...' });
-            }
-
             const response = await this.agent.chat(message);
 
             // Save messages to conversation manager
@@ -174,6 +207,11 @@ class PersistentAgent {
         } catch (error) {
             console.error('Error in persistent agent sendMessage:', error);
             throw error;
+        } finally {
+            // Restore original console.error
+            if (onProgress) {
+                console.error = originalConsoleError;
+            }
         }
     }
 
