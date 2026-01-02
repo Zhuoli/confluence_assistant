@@ -1,0 +1,6 @@
+/**
+ * Markdown Styles
+ * Markdown content, code blocks, syntax highlighting, and mermaid diagrams
+ */
+
+$(sed -n '1265,1640p' src/renderer/styles.css)

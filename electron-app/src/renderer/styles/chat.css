@@ -1,0 +1,6 @@
+/**
+ * Chat Styles  
+ * Main content area, chat messages, progress panel, and input
+ */
+
+$(sed -n '329,593p' src/renderer/styles.css)

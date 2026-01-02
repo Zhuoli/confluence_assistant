@@ -1,0 +1,8 @@
+/**
+ * Component Styles
+ * Shared components like scrollbars and message save button
+ */
+
+$(sed -n '792,826p' src/renderer/styles.css)
+
+$(sed -n '1641,1683p' src/renderer/styles.css)

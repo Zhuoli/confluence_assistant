@@ -1,0 +1,6 @@
+/**
+ * Settings Styles
+ * Modal, settings UI, MCP servers, skills, and forms
+ */
+
+$(sed -n '594,1264p' src/renderer/styles.css)
