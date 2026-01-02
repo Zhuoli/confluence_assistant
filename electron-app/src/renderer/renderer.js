@@ -65,53 +65,63 @@ function initializeMermaid() {
 function configureMarked() {
     if (typeof marked !== 'undefined' && typeof hljs !== 'undefined') {
         console.log('[Renderer] Configuring marked.js with custom code renderer');
+        console.log('[Renderer] marked version:', marked.VERSION || 'unknown');
+        console.log('[Renderer] hljs available:', !!hljs);
 
-        // Create custom renderer for code blocks with syntax highlighting
-        const renderer = {
-            code(code, language) {
-                console.log('[Renderer] Rendering code block, language:', language);
-                const validLanguage = language && hljs.getLanguage(language) ? language : null;
-                let highlighted;
-
-                if (validLanguage) {
-                    try {
-                        highlighted = hljs.highlight(code, { language: validLanguage }).value;
-                    } catch (e) {
-                        console.error('Highlight error:', e);
-                        highlighted = escapeHtml(code);
-                    }
-                } else {
-                    // Auto-detect or plain text
-                    try {
-                        highlighted = hljs.highlightAuto(code).value;
-                    } catch (e) {
-                        highlighted = escapeHtml(code);
-                    }
-                }
-
-                const langLabel = validLanguage || 'code';
-                const langClass = validLanguage ? ` class="language-${validLanguage}"` : '';
-                const escapedCode = escapeHtml(code);
-
-                // Wrap code block with copy button
-                return `<div class="code-block-wrapper">
-                    <div class="code-block-header">
-                        <span class="code-block-language">${langLabel}</span>
-                        <button class="code-copy-button" onclick="copyCodeToClipboard(this)" data-code="${escapedCode.replace(/"/g, '&quot;')}">
-                            <span class="copy-icon">📋</span>
-                            <span class="copy-text">Copy</span>
-                        </button>
-                    </div>
-                    <pre><code${langClass}>${highlighted}</code></pre>
-                </div>`;
-            }
-        };
-
+        // Use marked's extension API for code blocks
         marked.use({
-            renderer,
             breaks: true,
-            gfm: true
+            gfm: true,
+            renderer: {
+                code(code, infostring) {
+                    const language = infostring || '';
+                    console.log('[Renderer] code() called - language:', language, 'code length:', code.length);
+
+                    const validLanguage = language && hljs.getLanguage(language) ? language : null;
+                    let highlighted;
+
+                    if (validLanguage) {
+                        try {
+                            highlighted = hljs.highlight(code, { language: validLanguage }).value;
+                        } catch (e) {
+                            console.error('Highlight error:', e);
+                            highlighted = escapeHtml(code);
+                        }
+                    } else {
+                        // Auto-detect or plain text
+                        try {
+                            highlighted = hljs.highlightAuto(code).value;
+                        } catch (e) {
+                            highlighted = escapeHtml(code);
+                        }
+                    }
+
+                    const langLabel = validLanguage || 'code';
+                    const langClass = validLanguage ? ` class="language-${validLanguage}"` : '';
+                    const escapedCode = escapeHtml(code);
+
+                    console.log('[Renderer] Returning code block wrapper with copy button');
+
+                    // Wrap code block with copy button
+                    return `<div class="code-block-wrapper">
+                        <div class="code-block-header">
+                            <span class="code-block-language">${langLabel}</span>
+                            <button class="code-copy-button" onclick="copyCodeToClipboard(this)" data-code="${escapedCode.replace(/"/g, '&quot;')}">
+                                <span class="copy-icon">📋</span>
+                                <span class="copy-text">Copy</span>
+                            </button>
+                        </div>
+                        <pre><code${langClass}>${highlighted}</code></pre>
+                    </div>`;
+                }
+            }
         });
+
+        console.log('[Renderer] marked.js configured successfully');
+    } else {
+        console.warn('[Renderer] marked or hljs not available');
+        if (typeof marked === 'undefined') console.warn('[Renderer] marked is undefined');
+        if (typeof hljs === 'undefined') console.warn('[Renderer] hljs is undefined');
     }
 }
 
