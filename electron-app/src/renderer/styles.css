@@ -332,6 +332,8 @@ body {
     display: flex;
     flex-direction: column;
     background-color: var(--bg-secondary);
+    min-height: 0; /* Fix flex overflow */
+    overflow: hidden; /* Prevent overflow from children */
 }
 
 .chat-header {
@@ -352,8 +354,9 @@ body {
 
 .chat-container {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll; /* Always show scrollbar */
     padding: 24px 32px;
+    min-height: 0; /* Fix flex overflow */
 }
 
 .welcome-message {
@@ -812,19 +815,26 @@ body {
     background: #8A8C90;
 }
 
-/* Chat container scrollbar - more prominent */
+/* Chat container scrollbar - always visible and prominent */
 .chat-container::-webkit-scrollbar {
-    width: 14px;
+    width: 16px;
+    background: var(--bg-secondary);
+}
+
+.chat-container::-webkit-scrollbar-track {
+    background: #E8EAED;
+    border-left: 1px solid var(--border-color);
 }
 
 .chat-container::-webkit-scrollbar-thumb {
-    background: #C1C7CD;
-    border-radius: 7px;
-    border: 3px solid var(--bg-secondary);
+    background: #A8ACB0;
+    border-radius: 8px;
+    border: 3px solid #E8EAED;
+    min-height: 40px;
 }
 
 .chat-container::-webkit-scrollbar-thumb:hover {
-    background: #8A8C90;
+    background: #7A7E82;
 }
 
 /* Modal body scrollbar - make it more visible */
